@@ -1,0 +1,4 @@
+# 行尾策略（2026-09-14）：仓库 core.autocrlf=true（索引内已规范化为 LF）。
+# Windows 批处理脚本必须按 CRLF 检出，否则 `call :label` 会报 cannot find the batch label。
+*.cmd text eol=crlf
+*.bat text eol=crlf

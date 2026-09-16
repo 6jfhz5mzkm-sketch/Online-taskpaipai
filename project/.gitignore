@@ -1,0 +1,29 @@
+﻿# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+unpackage/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Preview (standalone HTML)
+preview/

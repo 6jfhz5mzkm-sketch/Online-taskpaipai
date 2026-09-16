@@ -1,0 +1,47 @@
+// ============================================================
+// _icons.scss — 商家端内联 SVG 图标（唯一真源，阶段一/阶段二共用）
+//
+// 归属：src/styles/mixins/（与 flex.scss 同层）。原先位于页面私有目录 components-local/stage2/，
+//       #F-27 按开发规则 §三 文件归属 / §4.3 封装位置 提升为全局，供全局共享组件
+//       components/TaskCard 复用（全局组件不得依赖页面私有目录）。
+//
+// 造型：复刻用户提供的「店铺」线描图标（梯形雨棚 + 三段波浪棚沿 + 店面主体轮廓，主体内部无线条），
+//       另配同笔宽风格的「列表」图标（二级类目）与 chevron（展开指示）。
+// 颜色：由 Token 变量插值进 SVG（$u-primary 等），源码无硬编码色值；
+// 尺寸：由使用方以 Token（$up-font-size-*）传入，默认与正文图标节奏一致。
+// 为什么用 data-URI 内联 SVG：① 用户给的 PNG 是黑底位图，直接用会出现黑块（需去底+重着色）；
+//       ② 内联 SVG 不新增静态资源、任意尺寸清晰、可精确对齐 Token；③ 避免模板里出现原生 <svg>
+//       标签（跨端编译安全），与项目既有做法一致。
+// 用法：.foo { @include stage2-icon(stage2-shop-icon($u-primary)); }
+// ============================================================
+
+/// 把 SCSS 颜色转成 data-URI 里可用的转义色（# → %23）
+@function stage2-icon-color($color) {
+  @return '%23' + str-slice('#{$color}', 2);
+}
+
+/// 店铺图标（父层：一级类目入口）
+@function stage2-shop-icon($color) {
+  @return url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#{stage2-icon-color($color)}' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'><path d='M4.6 9.6V19.6a1.4 1.4 0 0 0 1.4 1.4h12a1.4 1.4 0 0 0 1.4-1.4V9.6'/><path d='M7.6 4.4h8.8l5.4 5.2M2.2 9.6l5.4-5.2'/><path d='M2.2 9.6a3.27 1 0 0 0 6.53 0 3.27 1 0 0 0 6.53 0 3.27 1 0 0 0 6.54 0'/></svg>");
+}
+
+/// 列表/层级图标（子层：二级类目入口，与店铺图标同笔宽风格）
+@function stage2-list-icon($color) {
+  @return url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#{stage2-icon-color($color)}' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M4.5 6.6h.01M4.5 12h.01M4.5 17.4h.01M8.8 6.6h10.7M8.8 12h10.7M8.8 17.4h10.7'/></svg>");
+}
+
+/// chevron（展开指示；展开时由使用方 rotate(180deg)）
+@function stage2-chevron-icon($color) {
+  @return url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='#{stage2-icon-color($color)}' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M6.5 9.6 12 15.1l5.5-5.5'/></svg>");
+}
+
+/// 图标元素基础样式（尺寸由 Token 传入；不拉伸、不重复、居中）
+@mixin stage2-icon($url, $size: $up-font-size-h3) {
+  flex-shrink: 0;
+  width: $size;
+  height: $size;
+  background-image: $url;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}

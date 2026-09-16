@@ -1,0 +1,24 @@
+﻿// ============================================================
+// _typography.scss — 字号 Token
+// uview-plus 不提供全局字号变量，需自行扩展
+// ============================================================
+
+// ---- 字号层级 ----
+$up-font-size-display:  28px;
+$up-font-size-h1:       22px;
+$up-font-size-h2:       18px;
+$up-font-size-h3:       16px;
+$up-font-size-body:     14px;
+$up-font-size-body-sm:  13px;
+$up-font-size-caption:  12px;
+$up-font-size-mini:     11px;
+
+// ---- 行高 ----
+$up-line-height-tight:  1.25;
+$up-line-height-normal: 1.5;
+$up-line-height-loose:  1.75;
+
+// ---- 字重 ----
+$up-font-weight-bold:   600;
+$up-font-weight-medium: 500;
+$up-font-weight-normal: 400;

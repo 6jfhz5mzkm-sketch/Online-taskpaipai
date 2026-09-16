@@ -1,0 +1,65 @@
+// ============================================================
+// _colors.scss — 色彩 Token
+// 与 uview-plus 的 $u-* 变量 1:1 对齐，覆盖默认值
+// ============================================================
+
+// ---- 主色：成长绿 ----
+$u-primary:            #22C55E;
+$u-primary-dark:       #16A34A;
+$u-primary-disabled:   #86EFAC;
+$u-primary-light:      #F0FDF4;
+
+// ---- 成功色（同主色系）----
+$u-success:            #22C55E;
+$u-success-dark:       #16A34A;
+$u-success-disabled:   #86EFAC;
+$u-success-light:      #F0FDF4;
+
+// ---- 警告色 ----
+$u-warning:            #F59E0B;
+$u-warning-dark:       #D97706;
+$u-warning-disabled:   #FCD34D;
+$u-warning-light:      #FFFBEB;
+
+// ---- 错误色 ----
+$u-error:              #EF4444;
+$u-error-dark:         #DC2626;
+$u-error-disabled:     #FCA5A5;
+$u-error-light:        #FEF2F2;
+
+// ---- 信息色 ----
+$u-info:               #6366F1;
+$u-info-dark:          #4F46E5;
+$u-info-disabled:      #A5B4FC;
+$u-info-light:         #EEF2FF;
+
+// ---- 中性色 ----
+$u-white:             #FFFFFF;
+$u-main-color:         #1F2937;
+$u-content-color:      #4B5563;
+$u-tips-color:         #9CA3AF;
+$u-light-color:        #D1D5DB;
+$u-border-color:       #E2E8F0;
+$u-bg-color:           #F7F6F5; // 暖米白（R50 全局背景）
+$u-disabled-color:     #D1D5DB;
+$u-overlay:            rgba(0, 0, 0, 0.4);
+
+// ---- 标签/徽章语义 Token（对应《设计规范》§3.4 Tag 配色，供 Badge 等组件取用）----
+$u-tag-default-bg:      #F5F5F5;
+$u-tag-default-text:    #595959;
+$u-tag-default-border:  #E8E8E8;
+$u-tag-success-bg:      #F0FDF4;
+$u-tag-success-text:    #15803D;
+$u-tag-success-border:  #BBF7D0;
+$u-tag-info-bg:         #EFF6FF;
+$u-tag-info-text:       #1D4ED8;
+$u-tag-info-border:     #BFDBFE;
+$u-tag-warning-bg:      #FFFBEB;
+$u-tag-warning-text:    #B45309;
+$u-tag-warning-border:  #FDE68A;
+$u-tag-error-bg:        #FEF2F2;
+$u-tag-error-text:      #B91C1C;
+$u-tag-error-border:    #FECACA;
+$u-tag-primary-bg:      #F0FDF4;
+$u-tag-primary-text:    #15803D;
+$u-tag-primary-border:  #BBF7D0;

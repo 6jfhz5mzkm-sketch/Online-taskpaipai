@@ -1,0 +1,14 @@
+// ============================================================
+// _layout.scss — 阶段二/数据专区壳层布局常量（侧栏抽屉 + 移动端顶栏，T-3）
+// 只固定「壳层结构尺寸」这一处数值，供 components-local/stage2/Stage2Sidebar.vue
+// 与四个宿主页（pages/stage2/index、pages/stage2/data-board、
+// pages/data-center/index、pages/data-center/upload）共用，
+// 避免 56px/280px 在多个文件里重复硬编码。
+// 颜色/字号/间距/圆角/动效一律仍取 src/styles/tokens/_index.scss。
+// ============================================================
+
+// 侧栏抽屉宽度（≤600px，T-3 方案）
+$stage2-drawer-width: 280px;
+
+// 固定顶栏高度（≤600px，T-3 方案）
+$stage2-topbar-height: 56px;

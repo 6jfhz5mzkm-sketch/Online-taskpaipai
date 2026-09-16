@@ -1,0 +1,119 @@
+// 全局样式（管理后台视觉规范：dev-docs/agents/管理后台视觉规范.md）
+// 设计 Token 层：覆盖 Element Plus 主题变量（品牌蓝 + 辅助四色 + 文字三阶）
+
+// ---- 品牌主色 #2C8FF5 及派生（hover/浅底/禁用） ----
+:root {
+  --el-color-primary: #2C8FF5;
+  --el-color-primary-light-3: #6BB1F8;
+  --el-color-primary-light-5: #96C7FA;
+  --el-color-primary-light-7: #C0DDFC;
+  --el-color-primary-light-8: #D5E9FD;
+  --el-color-primary-light-9: #EAF4FE;
+  --el-color-primary-dark-2: #2372C4;
+
+  // 辅助色：红 / 橙 / 绿 / 青绿
+  --el-color-danger: #FF4D4F;
+  --el-color-danger-light-3: #FF8284;
+  --el-color-danger-light-5: #FFA6A7;
+  --el-color-danger-light-7: #FFCACA;
+  --el-color-danger-light-8: #FFDBDC;
+  --el-color-danger-light-9: #FFEDED;
+  --el-color-danger-dark-2: #CC3E3F;
+
+  --el-color-warning: #FFA914;
+  --el-color-warning-light-3: #FFC35B;
+  --el-color-warning-light-5: #FFD48A;
+  --el-color-warning-light-7: #FFE5B9;
+  --el-color-warning-light-8: #FFEED0;
+  --el-color-warning-light-9: #FFF6E8;
+  --el-color-warning-dark-2: #CC8710;
+
+  --el-color-success: #52C41A;
+  --el-color-success-light-3: #86D65F;
+  --el-color-success-light-5: #A9E28D;
+  --el-color-success-light-7: #CBEDBA;
+  --el-color-success-light-8: #DCF3D1;
+  --el-color-success-light-9: #EEF9E8;
+  --el-color-success-dark-2: #429D15;
+
+  // 青绿辅助（状态/数据用）
+  --el-color-info: #909AB2;
+  --el-color-info-light-9: #F0F2F7;
+  --accent-teal: #18C989;
+
+  // 文字三阶（规范 §1.1）
+  --el-text-color-primary: #2A364D;
+  --el-text-color-regular: #535F70;
+  --el-text-color-secondary: #909AB2;
+  --el-text-color-placeholder: #AEB8CC;
+  --el-text-color-disabled: #C4CCDA;
+
+  // 布局色
+  --el-border-color: #E1E6EF;
+  --el-border-color-light: #E8ECF4;
+  --el-fill-color-blank: #FFFFFF;
+
+  // 字体（中文苹方 fallback 系统；数字/指标 DIN fallback）
+  --font-family-base: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family-number: 'DIN Alternate', 'Bahnschrift', 'DIN', 'Arial Narrow', 'Arial', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-family-base);
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+  background-color: #F5F7FA;
+  -webkit-font-smoothing: antialiased;
+}
+
+// 数字/指标专用字体（DIN）
+.font-number {
+  font-family: var(--font-family-number);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+// 滚动条
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #C9D2E0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+// 卡片（间距按 8px 倍数）
+.el-card {
+  margin-bottom: 16px;
+}
+
+// 表格
+.el-table {
+  --el-table-border-color: #E8ECF4;
+  --el-table-header-bg-color: #F7F9FC;
+  --el-table-header-text-color: var(--el-text-color-regular);
+  font-size: 14px;
+}
+
+// 表单（间距按 8px 倍数）
+.el-form-item {
+  margin-bottom: 16px;
+}

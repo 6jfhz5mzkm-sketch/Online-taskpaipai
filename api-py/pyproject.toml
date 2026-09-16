@@ -1,0 +1,36 @@
+[project]
+name = "merchant-task-api-py"
+version = "0.1.0"
+description = "商家成长任务体系 Python/FastAPI 后端(迁移自 NestJS backend,接口契约一致)"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy>=2.0",
+    "pymysql>=1.1",
+    "cryptography>=42.0",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-jose[cryptography]>=3.3",
+    "alembic>=1.13",
+    "openpyxl>=3.1",
+    "lark-oapi>=1.4",
+    "httpx>=0.27",
+    "python-multipart>=0.0.9",
+    "alibabacloud-dypnsapi20170525>=2.0.0",
+    "alibabacloud-tea-openapi>=0.4.6",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+]
+
+[tool.uv]
+# 仅声明依赖,不以包形式安装本项目(应用直接跑 app 目录)
+package = false
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true

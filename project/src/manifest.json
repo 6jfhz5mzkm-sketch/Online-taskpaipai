@@ -1,0 +1,16 @@
+{
+  "name": "商家成长任务体系",
+  "appid": "",
+  "description": "电商平台商家成长任务管理",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "h5": {
+    "title": "商家成长任务体系",
+    "router": {
+      "mode": "hash"
+    }
+  },
+  "mp-weixin": { "appid": "", "setting": { "urlCheck": false } },
+  "usingComponents": true
+}

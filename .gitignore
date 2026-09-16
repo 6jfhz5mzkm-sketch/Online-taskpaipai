@@ -216,3 +216,38 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ===== project additions (public export) =====
+node_modules/
+dist/
+build/
+.venv/
+venv/
+*.env
+.env
+.env.*
+!*.env.example
+!*.env.sample
+!*.example
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.tar.gz
+*.zip
+*.sql.gz
+_deploy_backups/
+Temp/
+dev-docs/
+project/docs/
+test-evidence/
+automation/.env
+automation/reports/
+automation/backups/
+automation/node_modules/
+admin/dist/
+project/dist/
+project/unpackage/
+admin/node_modules/
+project/node_modules/

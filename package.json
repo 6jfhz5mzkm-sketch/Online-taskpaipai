@@ -1,0 +1,15 @@
+{
+  "name": "merchant-growth-task-acceptance",
+  "private": true,
+  "version": "0.1.0",
+  "description": "商家成长任务体系 · 根级统一验收编排（仅编排，不参与构建）",
+  "scripts": {
+    "verify": "npm run verify:backend && npm run verify:admin && npm run verify:h5 && npm run verify:db && npm run test:api",
+    "verify:backend": "cd api-py && uv run python -m compileall -q app && uv run python -c \"import app.main\"",
+    "verify:admin": "npm --prefix admin run build",
+    "verify:h5": "npm --prefix project run build:h5",
+    "verify:db": "cd api-py && uv run python scripts/check_schema.py && uv run python scripts/check_data_encoding.py && uv run python scripts/check_orphan.py && uv run alembic current",
+    "verify:smoke": "node scripts/smoke.mjs",
+    "test:api": "api-py\\run_tests.cmd"
+  }
+}

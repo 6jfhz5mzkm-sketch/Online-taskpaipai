@@ -1,0 +1,22 @@
+﻿// ============================================================
+// uni.scss — 全局样式入口（uni-app 自动引入）
+// ============================================================
+
+// ① Mixins
+@import '@/styles/mixins/flex.scss';
+
+// ② 色彩 Token（覆盖 uview-plus 默认值）
+@import '@/styles/tokens/_colors.scss';
+
+// ③ 引入 uview-plus 主题
+@import 'uview-plus/theme.scss';
+
+// ④ 扩展 Token
+@import '@/styles/tokens/_typography.scss';
+@import '@/styles/tokens/_spacing.scss';
+@import '@/styles/tokens/_radius.scss';
+@import '@/styles/tokens/_shadow.scss';
+@import '@/styles/tokens/_transition.scss';
+
+// ⑤ uview-plus 组件样式
+@import 'uview-plus/index.scss';

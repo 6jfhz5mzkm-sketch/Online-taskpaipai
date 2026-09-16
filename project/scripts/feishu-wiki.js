@@ -2,13 +2,17 @@
 /**
  * 飞书 Wiki 页面数据拉取脚本
  * 用于读取 Wiki 页面中嵌入的多维表格数据
+ * 环境变量（缺失即报错退出，无内置默认值）：
+ *   FEISHU_APP_ID       飞书应用 App ID
+ *   FEISHU_APP_SECRET   飞书应用 App Secret（仅本地配置，禁止写入仓库）
  */
 
+/** 飞书应用凭证：必须来自环境变量，禁止硬编码（AGENTS.md §十） */
 const APP_ID = process.env.FEISHU_APP_ID;
 const APP_SECRET = process.env.FEISHU_APP_SECRET;
 if (!APP_ID || !APP_SECRET) {
-  console.error('缺少环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET（飞书自建应用凭证）。');
-  console.error('请在本地环境中配置后再运行，例如：FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx node scripts/xxx.js …');
+  console.error('缺少飞书应用凭证：需在本地环境配置 FEISHU_APP_ID 与 FEISHU_APP_SECRET 后重试。');
+  console.error('用法示例：FEISHU_APP_ID=<app_id> FEISHU_APP_SECRET=<app_secret> node scripts/feishu-wiki.js read <wiki_node_token> <table_id>');
   process.exit(1);
 }
 const BASE_URL = 'https://open.feishu.cn/open-apis';

@@ -1,24 +1,28 @@
 #!/usr/bin/env node
 /**
- * άȡű
+ * 飞书多维表格数据拉取脚本
  * 
- * ÷
+ * 用法：
  *   node scripts/feishu-bitable.js list-tables <app_token>
  *   node scripts/feishu-bitable.js read <app_token> <table_id>
  *   node scripts/feishu-bitable.js export <app_token> <table_id> [output.json]
+ * 环境变量（缺失即报错退出，无内置默认值）：
+ *   FEISHU_APP_ID       飞书应用 App ID
+ *   FEISHU_APP_SECRET   飞书应用 App Secret（仅本地配置，禁止写入仓库）
  */
 
+/** 飞书应用凭证：必须来自环境变量，禁止硬编码（AGENTS.md §十） */
 const APP_ID = process.env.FEISHU_APP_ID;
 const APP_SECRET = process.env.FEISHU_APP_SECRET;
 if (!APP_ID || !APP_SECRET) {
-  console.error('缺少环境变量 FEISHU_APP_ID / FEISHU_APP_SECRET（飞书自建应用凭证）。');
-  console.error('请在本地环境中配置后再运行，例如：FEISHU_APP_ID=cli_xxx FEISHU_APP_SECRET=xxx node scripts/xxx.js …');
+  console.error('缺少飞书应用凭证：需在本地环境配置 FEISHU_APP_ID 与 FEISHU_APP_SECRET 后重试。');
+  console.error('用法示例：FEISHU_APP_ID=<app_id> FEISHU_APP_SECRET=<app_secret> node scripts/feishu-bitable.js list-tables <app_token>');
   process.exit(1);
 }
 const BASE_URL = 'https://open.feishu.cn/open-apis';
 
 // ============================================================
-// 1. ȡ tenant_access_token
+// 1. 获取 tenant_access_token
 // ============================================================
 async function getTenantToken() {
   const res = await fetch(`${BASE_URL}/auth/v3/tenant_access_token/internal`, {
@@ -28,13 +32,13 @@ async function getTenantToken() {
   });
   const data = await res.json();
   if (data.code !== 0) {
-    throw new Error(`ȡ token ʧ: ${data.msg}`);
+    throw new Error(`获取 token 失败: ${data.msg}`);
   }
   return data.tenant_access_token;
 }
 
 // ============================================================
-// 2. гάеݱ
+// 2. 列出多维表格中的所有数据表
 // ============================================================
 async function listTables(token, appToken) {
   const res = await fetch(`${BASE_URL}/bitable/v1/apps/${appToken}/tables`, {
@@ -42,13 +46,13 @@ async function listTables(token, appToken) {
   });
   const data = await res.json();
   if (data.code !== 0) {
-    throw new Error(`гݱʧ: ${data.msg}`);
+    throw new Error(`列出数据表失败: ${data.msg}`);
   }
   return data.data.items;
 }
 
 // ============================================================
-// 3. ȡݱ¼Զҳ
+// 3. 读取数据表记录（自动分页）
 // ============================================================
 async function readRecords(token, appToken, tableId) {
   let allRecords = [];
@@ -68,13 +72,13 @@ async function readRecords(token, appToken, tableId) {
     const data = await res.json();
 
     if (data.code !== 0) {
-      throw new Error(`ȡ¼ʧ: ${data.msg}`);
+      throw new Error(`读取记录失败: ${data.msg}`);
     }
 
     const records = data.data.items || [];
     allRecords = allRecords.concat(records);
     pageToken = data.data.has_more ? data.data.page_token : undefined;
-    console.error(`   ${page} ҳ: ${records.length} `);
+    console.error(`  第 ${page} 页: ${records.length} 条`);
     page++;
   } while (pageToken);
 
@@ -82,15 +86,15 @@ async function readRecords(token, appToken, tableId) {
 }
 
 // ============================================================
-// 4. ʽ¼Ϊƽ
+// 4. 格式化记录为扁平对象
 // ============================================================
 function flattenRecords(records) {
   return records.map((r) => {
     const row = { _record_id: r.record_id };
     for (const [key, value] of Object.entries(r.fields)) {
-      // άֵֶǸͣͳһȡı
+      // 飞书多维表格的字段值可能是各种类型，这里统一提取文本
       if (Array.isArray(value)) {
-        // ѡ / ı
+        // 多选 / 文本数组
         row[key] = value
           .map((v) => {
             if (typeof v === 'string') return v;
@@ -100,7 +104,7 @@ function flattenRecords(records) {
           })
           .join(', ');
       } else if (value && typeof value === 'object') {
-        // ѡ /  / Ա
+        // 单选 / 日期 / 人员等
         if (value.text) row[key] = value.text;
         else if (value.name) row[key] = value.name;
         else if (value.value) row[key] = value.value;
@@ -114,53 +118,53 @@ function flattenRecords(records) {
 }
 
 // ============================================================
-// 
+// 主流程
 // ============================================================
 async function main() {
   const [,, command, appToken, tableId, outputFile] = process.argv;
 
   if (!command || !appToken) {
     console.log(`
-÷
+用法：
   node scripts/feishu-bitable.js list-tables <app_token>
   node scripts/feishu-bitable.js read <app_token> <table_id>
   node scripts/feishu-bitable.js export <app_token> <table_id> [output.json]
 
-ȡ app_token  table_id
-  򿪶άURL ʽΪ
+获取 app_token 和 table_id：
+  打开多维表格，URL 格式为：
   https://xxx.feishu.cn/base/<app_token>?table=<table_id>
-   app_token  base/ Ĳ֣table_id  ?table= ֵ
+  其中 app_token 是 base/ 后面的部分，table_id 是 ?table= 后面的值
 `);
     process.exit(1);
   }
 
-  console.error('ڻȡ access token...');
+  console.error('正在获取飞书 access token...');
   const token = await getTenantToken();
-  console.error('? token ȡɹ\n');
+  console.error('? token 获取成功\n');
 
   if (command === 'list-tables') {
-    console.error(`г ${appToken} µݱ...`);
+    console.error(`正在列出 ${appToken} 下的数据表...`);
     const tables = await listTables(token, appToken);
     console.log(JSON.stringify(tables, null, 2));
-    console.error(`\n?  ${tables.length} ݱ`);
+    console.error(`\n? 共 ${tables.length} 张数据表`);
   }
 
   if (command === 'read' || command === 'export') {
     if (!tableId) {
-      console.error(': read/export Ҫ table_id ');
+      console.error('错误: read/export 需要 table_id 参数');
       process.exit(1);
     }
-    console.error(`ڶȡ ${appToken} / ${tableId} ...`);
+    console.error(`正在读取 ${appToken} / ${tableId} ...`);
     const records = await readRecords(token, appToken, tableId);
     const flat = flattenRecords(records);
-    console.error(`\n?  ${flat.length} ¼\n`);
+    console.error(`\n? 共 ${flat.length} 条记录\n`);
 
     const output = JSON.stringify(flat, null, 2);
 
     if (command === 'export' && outputFile) {
       const fs = require('fs');
       fs.writeFileSync(outputFile, output, 'utf-8');
-      console.error(`? ѵ ${outputFile}`);
+      console.error(`? 已导出到 ${outputFile}`);
     } else {
       console.log(output);
     }
@@ -168,6 +172,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(':', err.message);
+  console.error('错误:', err.message);
   process.exit(1);
 });

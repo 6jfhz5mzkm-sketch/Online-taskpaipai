@@ -1,6 +1,6 @@
 -- ============================================================
 -- 京东拍拍二手 · 商家任务体系 — 数据库 Schema
--- 版本: v1.10
+-- 版本: v1.11
 -- 日期: 2026-07-20 (v1.2: 2026-08-07 对齐实库: 补充 ai_analysis_log/stage_config,
 --       修正 V1 表列名与索引为实库实际结构)
 --       (v1.3: 2026-09-10 merchant_task_progress 增加唯一键 uk_merchant_task (merchantId, taskId))
@@ -37,6 +37,15 @@
 --        会触 (1406) Data too long;总控裁决采用短名 jd_duplicate_registration(25 字符)。完整原拟名与复现记录见
 --        方案 §5.3 偏差记录与 app/services/internal_notify.py:35-37;代码/真源已按短名统一,本注释同步订正。
 --        **无结构变更**,版本号仍 v1.10)
+--       (v1.11: 2026-09-16 任务单 #DB-23 / #PL-13 —— second_level_task(段 12) 新增任务行为语义两列:
+--       actionType VARCHAR(32) NOT NULL DEFAULT 'none'(行为类型,枚举 10 值: none/advisor_qr/category_picker/
+--       fee_picker/trademark_lookup/title_optimize/image_optimize/advisor_entry/data_form/data_upload)
+--       与 actionParam VARCHAR(64) NULL(行为参数,仅 data_form/data_upload 使用的不透明标识),列序紧随 actionUrl;
+--       存量 51 行由 DEFAULT 'none' 落位 + 13 行例外回填(方案 dev-docs/任务单/action-type-design.md §2.4);
+--       DDL/回填仅本地 dev 执行,脚本 project/scripts/db23_action_type_{apply,rollback}.sql;生产待用户确认后另派)
+--       (v1.11 补充, 2026-09-16, #DB-24: 段 12 的 type/completionType 列注释枚举对齐现实取值(type 6 值 / completionType 5 值,
+--        含旧轴遗留 form/jump/upload 与 form_submit/file_upload,并注明行为语义以 actionType 为准)。**无结构变更**,版本号仍 v1.11;
+--        后端 Literal 与 AF 下拉修正分别由 #PB-40 / #AF-21 负责)
 --       (v1.5: 2026-09-10 任务单 #DB-5 批 1 —— 按实库对齐: 44 列补 NOT NULL、18 列时间精度 DATETIME(6)+CURRENT_TIMESTAMP(6)、4 张表(stage/stage_config/merchant/merchant_category)列序对齐实库、
 --       24 张表显式 COLLATE=utf8mb4_0900_ai_ci(消除对服务器默认值的依赖)、10 列补注释; 逐列依据见 dev-docs/任务单/DB4-schema-db-convergence.md)
 -- 段号说明: 段号 10（原 stage 表）已于 2026-09-11 由 #DB-7 删除，编号不重排（重排会使全文件行号位移），后续段号沿用原序；现最大段号 31 而实际表数 30，偏移仅此一处（段 10 是唯一跳号）。#DB-17 于本区与段 11 前各补 1 行说明；#DB-13 追加段 27/28/29、#DB-19 追加段 30/31（账号绑定两表）并同步本行计数
@@ -294,10 +303,12 @@ CREATE TABLE second_level_task (
   title VARCHAR(128) NOT NULL COMMENT '二级任务标题',
   description TEXT COMMENT '二级任务描述',
   detail TEXT COMMENT '任务详情(Markdown)',
-  type VARCHAR(16) NOT NULL COMMENT '任务类型(mandatory/suggested/guide)',
-  completionType VARCHAR(16) NOT NULL COMMENT '完成方式(system_check/manual_submit/click_read)',
+  type VARCHAR(16) NOT NULL COMMENT '任务类型/重要度(mandatory=必做/suggested=建议/guide=引导;另存旧轴遗留值 form/jump/upload——属交互形态的旧轴残留,行为语义一律以 actionType 为准,勿再新增此类值)',
+  completionType VARCHAR(16) NOT NULL COMMENT '完成方式(system_check=系统校验/manual_submit=人工提交/click_read=点击阅读;另存旧轴遗留值 form_submit=表单提交/file_upload=文件上传——行为语义同样以 actionType 为准)',
   actionText VARCHAR(64) DEFAULT NULL COMMENT '操作按钮文案',
   actionUrl VARCHAR(512) DEFAULT NULL COMMENT '操作按钮链接',
+  actionType VARCHAR(32) NOT NULL DEFAULT 'none' COMMENT '行为类型(按钮点击后的交互;枚举:none=无特殊行为/advisor_qr=顾问企微二维码弹窗/category_picker=任务卡内类目选择器/fee_picker=任务卡内资费选择器+定位fee锚点/trademark_lookup=商标注册号查询面板/title_optimize=AI标题优化面板/image_optimize=图片优化区块/advisor_entry=顾问入口区块/data_form=数据分析专区表单录入/data_upload=数据分析专区文件上传)',
+  actionParam VARCHAR(64) DEFAULT NULL COMMENT '行为参数(不透明标识,不承载业务规则;仅 data_form/data_upload 使用:data_form 取 star/product-count/health-score,data_upload 取 trade/traffic/product;其余行为为 NULL)',
   tag VARCHAR(32) DEFAULT NULL COMMENT '标签',
   defaultCompleted TINYINT NOT NULL DEFAULT 0 COMMENT '默认已完成',
   status TINYINT NOT NULL DEFAULT 1 COMMENT '0=禁用 1=启用',

@@ -93,7 +93,7 @@ def test_url_with_query_not_flagged(url):
     assert encoding.detect_mojibake(url) is None
 
 
-@pytest.mark.parametrize("plain", ["", None, "admin@example.com", "13800000000", "mandatory", "2026-09-14"])
+@pytest.mark.parametrize("plain", ["", None, "admin@example.com", "<PHONE>", "mandatory", "2026-09-14"])
 def test_non_text_or_ascii_not_flagged(plain):
     """空值/None/纯 ASCII 不得误判。"""
     assert encoding.detect_mojibake(plain) is None

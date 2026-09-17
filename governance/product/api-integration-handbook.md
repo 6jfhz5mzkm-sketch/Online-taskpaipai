@@ -117,7 +117,7 @@
 |------|------|------|---------|---------------|-----------|
 | GET | `/api/task/progress` | 商家 | — | `{completedTasks, stage2_unlocked, data_center_unlocked, phase1_remaining_task_ids}` | 401 |
 | POST | `/api/task/progress` | 商家 | body `UpdateProgressBody{taskId, status}` | `{success, stage2_unlocked, data_center_unlocked}`（201） | 400「任务不存在」/「任务已停用，不可提交进度」/「该任务默认已完成，不可置为未完成」；403「阶段二未解锁」/「数据专区未解锁」；401 |
-| GET | `/api/task/stages` | 商家 | — | 阶段+任务树（阶段二未解锁时该阶段返回锁定壳 `locked:true, firstLevelTasks:[]`；解锁后 4/14/3/6/6 共 33 个任务） | 401 |
+| GET | `/api/task/stages` | 商家 | — | 阶段+任务树（阶段二未解锁时该阶段返回锁定壳 `locked:true, firstLevelTasks:[]`；解锁后 4/14/3/6/6 共 33 个任务）；**二级任务含 `actionType`/`actionParam`（#PB-39，位置在 `actionUrl` 之后）** | 401 |
 | GET | `/api/tour/seen` | 商家 | — | `{seen:bool}` | 401 |
 | POST | `/api/tour/seen` | 商家 | — | `{success:true}` | 401 |
 | POST | `/api/tour/seen/reset` | 商家 | — | `{success:true}` | 401 |
@@ -185,10 +185,10 @@
 | GET | `/api/admin/group/{id}` | 管理 | path `id` | 一级任务行 | 404「一级任务 {id} 不存在」；401 |
 | PUT | `/api/admin/group/{id}` | admin+ | body `GroupUpdateBody{...}`（同 create） | 一级任务行 | 404；400；403；401 |
 | DELETE | `/api/admin/group/{id}` | admin+ | path `id` | `{success:true}` | 404；403；401 |
-| POST | `/api/admin/task/create` | admin+ | body `TaskCreateBody{taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, tag, defaultCompleted, sortOrder}` | 二级任务行（201） | 400「二级任务标识 … 已存在」；403；401 |
-| GET | `/api/admin/task/list` | 管理 | query `firstLevelTaskId?`、`stageId?` | `[{id, taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, tag, defaultCompleted, status, sortOrder, createdAt, updatedAt}]` | 401 |
+| POST | `/api/admin/task/create` | admin+ | body `TaskCreateBody{taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, actionType, actionParam, tag, defaultCompleted, sortOrder}`（`type` 6 值 / `completionType` 5 值，**均与库内现实取值一致**（#PB-40，真源 §8.3.10）；`actionType` 10 值枚举、省略 = `none`；`actionParam` 仅 `data_*` 可用且**必填**） | 二级任务行（201，含 `actionType`/`actionParam`） | 400「二级任务标识 … 已存在」/ 非法枚举 / 参数规则违反（**统一文案**「提交的内容有误，请检查后重试」）；403；401 |
+| GET | `/api/admin/task/list` | 管理 | query `firstLevelTaskId?`、`stageId?` | `[{id, taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, actionType, actionParam, tag, defaultCompleted, status, sortOrder, createdAt, updatedAt}]` | 401 |
 | GET | `/api/admin/task/{id}` | 管理 | path `id` | 二级任务行 | 404「二级任务 {id} 不存在」；401 |
-| PUT | `/api/admin/task/{id}` | admin+ | body `TaskUpdateBody{...}`（同 create） | 二级任务行 | 404；400；403；401 |
+| PUT | `/api/admin/task/{id}` | admin+ | body `TaskUpdateBody{...}`（同 create，两字段省略 = 不改；切回非 `data_*` 时**必须显式 `actionParam: null`**） | 二级任务行 | 404；400（非法枚举 / 参数规则违反，统一文案）；403；401 |
 | DELETE | `/api/admin/task/{id}` | admin+ | path `id` | `{success:true}` | 404；403；401 |
 
 > 说明：以上写接口由 api-py 提供、管理后台 `admin/src/api/*.ts` 已封装；其中 `stage` 写接口**当前无页面调用**（阶段管理页不可达），按用户裁决**只登记不删**（真源 §5.2 API-19）。
@@ -256,7 +256,7 @@
 | `AiConfigPatchBody` | `api_key, base_url, model, timeout_ms, max_tokens, daily_limit, enabled` | `PUT /api/admin/ai-config/{entry}` |
 | `StageCreateBody` / `StageUpdateBody` | `stageId, stageNum, title, description, buttonText, sortOrder, phaseNum` | `/api/admin/stage/create` · `PUT /api/admin/stage/{id}` |
 | `GroupCreateBody` / `GroupUpdateBody` | `taskId, stageId, title, description, buttonText, sortOrder` | `/api/admin/group/create` · `PUT /api/admin/group/{id}` |
-| `TaskCreateBody` / `TaskUpdateBody` | `taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, tag, defaultCompleted, sortOrder` | `/api/admin/task/create` · `PUT /api/admin/task/{id}` |
+| `TaskCreateBody` / `TaskUpdateBody` | `taskId, firstLevelTaskId, stageId, title, description, detail, type, completionType, actionText, actionUrl, actionType, actionParam, tag, defaultCompleted, sortOrder` | `/api/admin/task/create` · `PUT /api/admin/task/{id}` |
 
 > 字段的具体校验（长度、必填、枚举、`null` 语义）**不在本文件重复**：以后端技术方案 §5.2 对应 API 节为准。
 
@@ -266,7 +266,7 @@
 
 | code | 文案 | 触发端点族 |
 |------|------|-----------|
-| 400 | 「提交的内容有误，请检查后重试」 | 任意接口的 Pydantic 校验失败（**不回显字段名**，真源 §4.3.1） |
+| 400 | 「提交的内容有误，请检查后重试」 | 任意接口的 Pydantic 校验失败（**不回显字段名**，真源 §4.3.1）；**服务层参数规则校验**同样复用本句（如任务 `actionType`/`actionParam` 组合非法、商家列表 `stage`/`status` 传未登记取值） |
 | 400 | 「数据日期不正确，请填写如 2026-08-05 这样的日期」 | `POST /api/shop/star`\|`product-count`\|`health-score` |
 | 400 | 「文件表头无法识别，请使用商智导出的原始文件」 | `POST /api/shop/trade`\|`traffic`\|`product` |
 | 400 | 「文件的日期跨度不支持，请按单日、近 7 天或近 30 天导出后重试」 | 同上 |

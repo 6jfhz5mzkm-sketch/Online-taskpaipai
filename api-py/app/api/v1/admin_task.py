@@ -22,8 +22,28 @@ from app.services.admin_task_config import (
 
 router = APIRouter(prefix="/admin/task", tags=["管理端二级任务管理"])
 
-TaskType = Literal["mandatory", "suggested", "guide"]
-CompletionType = Literal["system_check", "manual_submit", "click_read"]
+# 任务重要度分类(#PB-40 对齐开发库现实取值;`services/admin_task_config.py::TASK_TYPES` 为同源枚举真源):#   mandatory/suggested/guide = 运营主轴(必做/建议/引导);form/jump/upload **属旧轴遗留**(见真源 §8.3.10),
+#   行为语义以 `actionType`(#PB-39 / §8.3.9)为准 —— 保留这 3 个值只为「存量 8 行可原样保存」,不再新增同类值。
+TaskType = Literal["mandatory", "suggested", "guide", "form", "jump", "upload"]
+# 完成方式(#PB-40 同上;`COMPLETION_TYPES` 同源):form_submit/file_upload 为旧轴遗留,保留以便存量行可保存。
+CompletionType = Literal["system_check", "manual_submit", "click_read", "form_submit", "file_upload"]
+# 行为类型(#PB-39 / 设计单 dev-docs/任务单/action-type-design.md §2.1;真源 §1.3):
+#   9 个真实行为 + 默认 none;非法取值由框架校验出口统一转 400「提交的内容有误，请检查后重试」
+#   (与 TaskType/CompletionType 同一套校验通道,不新造文案/不加第二套校验)。
+#   参数规则(data_* 必带 actionParam、其余必须为空)需要与**库内现存值**合并后判定,
+#   故 owner 落在 services/admin_task_config.py::_assert_action_pair(路由只透传)。
+ActionType = Literal[
+    "none",
+    "advisor_qr",
+    "category_picker",
+    "fee_picker",
+    "trademark_lookup",
+    "title_optimize",
+    "image_optimize",
+    "advisor_entry",
+    "data_form",
+    "data_upload",
+]
 
 
 class TaskCreateBody(BaseModel):
@@ -37,6 +57,8 @@ class TaskCreateBody(BaseModel):
     completionType: CompletionType
     actionText: Optional[str] = Field(default=None, max_length=64)
     actionUrl: Optional[str] = Field(default=None, max_length=512)
+    actionType: ActionType = "none"          # 省略 = 落默认 none(与列 DEFAULT 一致)
+    actionParam: Optional[str] = Field(default=None, max_length=64)
     tag: Optional[str] = Field(default=None, max_length=32)
     defaultCompleted: Optional[int] = Field(default=None, ge=0)
     sortOrder: Optional[int] = Field(default=None, ge=0)
@@ -53,6 +75,8 @@ class TaskUpdateBody(BaseModel):
     completionType: Optional[CompletionType] = None
     actionText: Optional[str] = Field(default=None, max_length=64)
     actionUrl: Optional[str] = Field(default=None, max_length=512)
+    actionType: Optional[ActionType] = None   # 省略 = 不改(部分更新)
+    actionParam: Optional[str] = Field(default=None, max_length=64)
     tag: Optional[str] = Field(default=None, max_length=32)
     defaultCompleted: Optional[int] = Field(default=None, ge=0)
     sortOrder: Optional[int] = Field(default=None, ge=0)

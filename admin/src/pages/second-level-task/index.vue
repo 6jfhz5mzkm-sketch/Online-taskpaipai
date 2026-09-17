@@ -35,6 +35,15 @@
             {{ getCompletionTypeLabel(row.completionType) }}
           </template>
         </el-table-column>
+        <!-- 行为类型只读展示（#AF-20；none 用占位，data_* 附带参数便于核对「哪个表单/哪种上传」） -->
+        <el-table-column :label="ACTION_TYPE_COLUMN_LABEL" width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <template v-if="row.actionType && row.actionType !== 'none'">
+              {{ actionTypeText(row) }}
+            </template>
+            <span v-else class="muted">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="tag" label="标签" width="90">
           <template #default="{ row }">
             <el-tag v-if="row.tag" size="small" type="info">{{ row.tag }}</el-tag>
@@ -74,6 +83,12 @@ import { Plus } from '@element-plus/icons-vue'
 import { useTaskStore } from '@/store/modules/task'
 import { ElMessageBox } from 'element-plus'
 import type { SecondLevelTask } from '@/api/second-level-task'
+import {
+  ACTION_TYPE_COLUMN_LABEL,
+  ACTION_TYPE_LABELS,
+  COMPLETION_TYPE_LABELS,
+  TASK_TYPE_LABELS,
+} from '@/constants/second-level-task'
 
 const taskStore = useTaskStore()
 const router = useRouter()
@@ -116,23 +131,17 @@ const getTypeTag = (type: string) => {
   return map[type] || 'info'
 }
 
-const getTypeLabel = (type: string) => {
-  const map: Record<string, string> = {
-    mandatory: '必做',
-    suggested: '建议',
-    guide: '引导',
-  }
-  return map[type] || type
+/** 任务类型文案：与编辑页共用同一份常量（#AF-21）；未知取值如实显示原值，不隐藏、不静默改默认 */
+const getTypeLabel = (type: string) => TASK_TYPE_LABELS[type] ?? type
+
+/** 行为类型只读文案：none 由模板占位；data_* 附带参数；未知取值回退原值（不隐藏） */
+const actionTypeText = (row: SecondLevelTask) => {
+  const label = ACTION_TYPE_LABELS[row.actionType] ?? row.actionType
+  return row.actionParam ? `${label}（${row.actionParam}）` : label
 }
 
-const getCompletionTypeLabel = (type: string) => {
-  const map: Record<string, string> = {
-    system_check: '系统检测',
-    manual_submit: '手动提交',
-    click_read: '点击已读',
-  }
-  return map[type] || type
-}
+/** 完成方式文案：与编辑页共用同一份常量（#AF-21）；未知取值如实显示原值 */
+const getCompletionTypeLabel = (type: string) => COMPLETION_TYPE_LABELS[type] ?? type
 </script>
 
 <style scoped>

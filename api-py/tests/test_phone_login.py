@@ -87,6 +87,23 @@ def _seed_row(session, phone: str, *, attempts: int = 0, used_at=None, created_a
         text("SELECT id FROM merchant_login_code WHERE phone = :p ORDER BY id DESC LIMIT 1"), {"p": phone}).scalar())
 
 
+def _freeze_phone_auth_clock(monkeypatch, hour: int = 12, minute: int = 0) -> datetime:
+    """把产品侧时钟缝 `phone_auth._now()` 冻结到「今天的 hour:minute」,并返回该时刻供造行(#T-21)。
+
+    背景(时间脆弱性):频控配额是**自然日**口径(`phone_auth._enforce_send_limits` 里
+    `day_start = now.replace(hour=0, ...)`)。C3 日上限用例用真实 `datetime.now()` 造
+    `now - timedelta(hours=2..11)` 共 10 行(恰等于 `LOGIN_CODE_PHONE_DAILY_MAX`),但当**真实本地
+    时间 < 11:00** 时,hour=10/11 两行落到**前一天**,当日计数只有 8 行 ⇒ 不触发 C3 ⇒ 期望 429 实得 200。
+
+    冻结到 12:00 后(>= 11:00),10 行全部落在同一自然日,判定与真实时钟无关;小时窗口计数仍为 0
+    (h>=2 的行都在 now-1h 之前),故不会抢先触发 C2。调用方必须用返回的 frozen 造行 —— 冻结产品时钟
+    却仍按真实 now 造行,种子行与判定窗口会不同源,断言依旧会红。
+    """
+    frozen = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
+    monkeypatch.setattr(phone_auth, "_now", lambda: frozen)
+    return frozen
+
+
 def _cleanup_phone(session, phone: str) -> None:
     """按 id 清理本用例造的行(先记录再删除);商家行复用 conftest 助手。"""
     merchant_ids = [r[0] for r in session.execute(
@@ -127,7 +144,7 @@ def stub_im_channel(monkeypatch):
     """
     from app.core.config import get_settings
 
-    monkeypatch.setenv("INTERNAL_NOTIFY_RECEIVE_ID", "ou_test_receive_id")
+    monkeypatch.setenv("INTERNAL_NOTIFY_RECEIVE_ID", "<OPEN_ID>_receive_id")
     get_settings.cache_clear()
     monkeypatch.setattr(internal_notify, "_send_text",
                         lambda target_type, target, text: (True, None))
@@ -245,7 +262,7 @@ def test_send_code_anti_enumeration_new_and_existing_identical(client, session, 
     finally:
         # #PB-23-R1:临时商家必须**显式按 id 清理**——若先 `SET phone = NULL` 再按 phone 反查,必然查不到,
         # 每次全量都会泄漏 1 行 `_test_shop_*`(确定性缺陷)。此处直接复用 conftest 助手按 id 删除
-        # (已覆盖 6 张 shop_* 表 + merchant_stage_progress + merchant_task_progress)。
+        # (覆盖范围 = scripts/merchant_scope.py 的动态发现,含驼峰 merchant_task_progress.merchantId)。
         cleanup_temp_merchant(session, existing_id)
         _cleanup_phone(session, phone_old)
         _cleanup_phone(session, phone_new)
@@ -558,7 +575,8 @@ def test_c3_phone_daily_limit_429(client, session, monkeypatch):
     phone = _phone()
     _stub_send(monkeypatch)
     _stub_captcha_ok(monkeypatch)
-    now = datetime.now()
+    # #T-21:冻结产品时钟到 12:00 并按同一时刻造行(原用真实 now,< 11:00 时后两行落到前一天 → 假红)
+    now = _freeze_phone_auth_clock(monkeypatch)
     try:
         for hour in range(2, 12):
             _seed_row(session, phone, created_at=now - timedelta(hours=hour))
@@ -574,7 +592,11 @@ def test_c4_c5_ip_limits_429(client, session, monkeypatch):
     phone = _phone()
     _stub_send(monkeypatch)
     _stub_captcha_ok(monkeypatch)
-    now = datetime.now()
+    # #T-21:同 C3 —— 第二步 C5 是 IP 的**自然日**上限:真实本地时间 00:00~00:29 时,
+    # `now - timedelta(minutes=30)` 会落到前一天,IP 日计数凑不满 LOGIN_CODE_IP_DAILY_MAX
+    # ⇒ 凌晨假红(同源模拟 00:15 实测 :612 断言失败)。冻结到 12:00 后与真实时钟无关;
+    # C4 走相对小时窗口(now-1h),冻结后这些行仍在窗口内,不影响其语义。
+    now = _freeze_phone_auth_clock(monkeypatch)
     seeded = []
     try:
         for _ in range(get_settings().LOGIN_CODE_IP_HOURLY_MAX):
@@ -638,13 +660,16 @@ def test_rejected_requests_do_not_count(client, session, monkeypatch):
     phone = _phone()
     _stub_send(monkeypatch)
     _stub_captcha_ok(monkeypatch)
-    now = datetime.now()
+    # #T-21:同 C3 —— 冻结时钟并按 frozen 造行,否则真实 now < 11:00 时该手机号日的行数凑不满
+    now = _freeze_phone_auth_clock(monkeypatch)
     try:
         for hour in range(2, 12):
             _seed_row(session, phone, created_at=now - timedelta(hours=hour))
         before = session.execute(text("SELECT COUNT(*) FROM merchant_login_code WHERE phone = :p"), {"p": phone}).scalar()
         for _ in range(3):
-            assert client.post(SEND_PATH, json={"phone": phone, "captcha_verify_param": CAPTCHA_PARAM}).status_code == 429
+            resp = client.post(SEND_PATH, json={"phone": phone, "captcha_verify_param": CAPTCHA_PARAM})
+            assert resp.status_code == 429, resp.text
+            assert resp.json()["message"] == phone_auth.PHONE_DAILY_LIMIT_MESSAGE
         after = session.execute(text("SELECT COUNT(*) FROM merchant_login_code WHERE phone = :p"), {"p": phone}).scalar()
         assert before == after == 10
     finally:
@@ -656,12 +681,14 @@ def test_local_gate_runs_before_captcha_seam(client, session, monkeypatch):
     phone = _phone()
     send_calls = _stub_send(monkeypatch)
     captcha_calls = _stub_captcha_ok(monkeypatch)
-    now = datetime.now()
+    # #T-21:同 C3 —— 冻结时钟并按 frozen 造行(被拦下的仍是 C3 日上限这条本地闸)
+    now = _freeze_phone_auth_clock(monkeypatch)
     try:
         for hour in range(2, 12):
             _seed_row(session, phone, created_at=now - timedelta(hours=hour))
         resp = client.post(SEND_PATH, json={"phone": phone, "captcha_verify_param": CAPTCHA_PARAM})
-        assert resp.status_code == 429
+        assert resp.status_code == 429, resp.text
+        assert resp.json()["message"] == phone_auth.PHONE_DAILY_LIMIT_MESSAGE
         assert send_calls == [] and captcha_calls == []
     finally:
         _cleanup_phone(session, phone)
@@ -931,7 +958,7 @@ def test_pnvs_sdk_exception_logs_code_and_message(monkeypatch, caplog):
     monkeypatch.setattr(sms_verify, "SmsVerifyClient", _Client)
     with caplog_at_warning(caplog) as logs:
         with pytest.raises(ApiException) as exc:
-            sms_verify.send_verify_code("13900001111", "login-out-id")
+            sms_verify.send_verify_code("<PHONE>", "login-out-id")
     assert (exc.value.code, exc.value.status_code) == (502, 502)
     assert exc.value.message == sms_verify.SMS_UNAVAILABLE_MESSAGE == "短信服务暂不可用，请稍后重试"
     text = logs.text()
@@ -939,7 +966,7 @@ def test_pnvs_sdk_exception_logs_code_and_message(monkeypatch, caplog):
     assert "code=404" in text
     assert "Specified api is not found" in text
     assert "request_id=req-fake-0001" in text
-    assert "13900001111" not in text                                   # 完整手机号不入日志
+    assert "<PHONE>" not in text                                   # 完整手机号不入日志
     assert "test-sk" not in text and "test-ak" not in text             # 凭证不入日志
 
 
@@ -967,7 +994,7 @@ def test_check_business_level_failure_is_not_passed_not_502(monkeypatch, caplog)
 
     monkeypatch.setattr(sms_verify, "SmsVerifyClient", _Client)
     with caplog_at_info(caplog) as logs:
-        assert sms_verify.check_verify_code("13900001111", "999999", "login-out-id") is False
+        assert sms_verify.check_verify_code("<PHONE>", "999999", "login-out-id") is False
     assert "校验未通过(业务级)" in logs.text() and "isv.ValidateFail" in logs.text()
     assert "999999" not in logs.text()                                  # 验证码不入日志
 
@@ -1015,7 +1042,7 @@ def test_pnvs_check_exception_also_logs_code_and_message(monkeypatch, caplog):
     monkeypatch.setattr(sms_verify, "SmsVerifyClient", _Client)
     with caplog_at_warning(caplog) as logs:
         with pytest.raises(ApiException) as exc:
-            sms_verify.check_verify_code("13900001111", "123456", "login-out-id")
+            sms_verify.check_verify_code("<PHONE>", "123456", "login-out-id")
     assert (exc.value.code, exc.value.status_code) == (502, 502)
     text = logs.text()
     assert "code=404" in text and "request_id=req-fake-0001" in text

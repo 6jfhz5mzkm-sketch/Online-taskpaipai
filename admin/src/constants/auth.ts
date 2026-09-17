@@ -5,7 +5,7 @@
  *              登出动作由 store 的 logout 统一实现（清 admin_token / admin_info 并跳 /login），
  *              页面不得各写一套清理逻辑。
  *              管理后台 token 与商家端互相独立（不同 secret、不同 localStorage 键），此处只清 admin 自己的。
- *              登记：project/docs/开发规则.md §8.2（新增或修改文案必须同步该表）。
+ *              登记：project/docs/任务管理后台开发标准.md §十一（管理后台文案唯一登记处；新增或修改文案必须同步该节）。
  */
 
 /** 退出登录入口文案（用户区下拉菜单项） */

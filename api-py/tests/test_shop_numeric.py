@@ -4,8 +4,8 @@
 ValueError(Unknown format code 'f' for object of type 'str'),使 GET /api/shop/summary 500。
 修复原则:数值解析收敛到唯一 owner parse_number,_to_num/_dec 只保留各自的失败策略。
 
-隔离:纯函数用例零副作用;端到端用例使用临时商家,finally 清理 star 数据
-(conftest.cleanup_temp_merchant 未覆盖 shop_star_data,故此处自行清理)。
+隔离:纯函数用例零副作用;端到端用例使用临时商家,finally 先清 star 数据、再交
+conftest.cleanup_temp_merchant 兜底(覆盖范围 = scripts/merchant_scope.py 的动态发现,含 shop_star_data)。
 """
 
 from decimal import Decimal

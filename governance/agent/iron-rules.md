@@ -178,9 +178,9 @@
 - **测试/探测数据的清理纪律（2026-09-11 事故教训）**：清理自己造的测试数据时，**必须先按「本次创建的主键 id」精确记录并备份，再按 id 删除**；**禁止**用宽泛谓词（如「按事件类型 + 商家 ID」）批量删——总控曾据此误删 3 行 2026-09-08 的历史 `event_log` 行（已用 `Temp/db7b_backup_*` 的 dump 精确还原）。「备份 → 删除 → 校验前后计数与基线一致」须在同一事务内完成。
 - **该纪律适用于任何生产数据写操作（2026-09-14 扩充）**：不只"清理自己造的测试数据"——**正式配置导入 / DML 修正 / 数据补齐**同样必须走：**先备份（路径 + 字节数 + sha256）→ 预检（目标表行数、主键与唯一键冲突、目标库确认）→ 执行 → 逐字段/逐行校验 → 留回滚脚本与回滚资产**。参考 `#DB-11`（`category_requirement` 导入）与 `#OPS-30`（配置导出清单持久化为 `<SERVER_ROOT>/db_backups/export_config_data.sh`）；**生产写操作还须满足 `dev-docs/部署规则.md` 的确认闸**（未获用户确认不得执行）。
 - **临时实体（测试商家等）的创建与清理纪律（2026-09-15 事故教训，用户批准入律）**：
-  · 造临时实体**必须复用仓库既有助手**——`api-py/tests/conftest.py` 的 `make_temp_merchant()` / `cleanup_temp_merchant()`；后者**已覆盖 6 张 shop 表 + `merchant_stage_progress` + `merchant_task_progress`**，自造一套必然漏表；
-  · 确需手搓时：任务单必须**列明全部含 `merchant_id` 的表**（当前 **13 张**），且清理后**必须自跑孤儿巡检**——`cd api-py && uv run python scripts/check_orphan.py`，确认 `unregistered_rows = 0` 才算完成；
-  · 事故：`#PB-24-3` 手搓建了 3 个临时商家，清理时删了 `merchant`/`shop_trade_data`/`merchant_task_progress`，**漏删 `event_log` 与 `merchant_stage_progress`** → **16 行孤儿**，把 `ORPHAN_GATE` 直接打红（由总控实测发现，其自报为"已清理"）；同类不完整清理在 `#F-29`/`#PB-24-2` 亦出现过（均被总控实测拦下）。
+  · 造临时实体**必须复用仓库既有助手**——`api-py/tests/conftest.py` 的 `make_temp_merchant()` / `cleanup_temp_merchant()`；后者自 **#T-20-R1** 起**动态覆盖全部含商家标识列的表**（口径唯一真源 = `api-py/scripts/merchant_scope.py`，列名 ∈ {`merchant_id`, `merchantId`}；当前实测 **16 张**），自造一套必然漏表；
+  · 确需手搓时：任务单必须列明全部含商家标识列的表，且**该清单不得手抄**——必须以动态发现为准（`merchant_scope.discover_merchant_scope()`；当前实测 **16 张** = 15 张 `merchant_id` + 1 张驼峰 `merchantId`；本行曾写死「13 张」，**已作废**），清理后**必须自跑孤儿巡检**——`cd api-py && uv run python scripts/check_orphan.py`，确认 `unregistered_rows = 0` 才算完成；
+  · 事故：`#PB-24-3` 手搓建了 3 个临时商家，清理时删了 `merchant`/`shop_trade_data`/`merchant_task_progress`，**漏删 `event_log` 与 `merchant_stage_progress`** → **16 行孤儿**，把 `ORPHAN_GATE` 直接打红（由总控实测发现，其自报为"已清理"）；同类不完整清理在 `#F-29`/`#PB-24-2` 亦出现过（均被总控实测拦下）。**第三次（2026-09-16）**：`#T-20` 的 D1（清理助手硬编码 9 张、漏 `event_log`），随后只读审计又发现 `api-py/scripts/verify_stage4.py` 漏驼峰表且用 `LIKE` 宽泛谓词 ⇒ **根因始终是「表清单存在多份副本」**；现已把「发现 + 清理」收敛为单一真源 `api-py/scripts/merchant_scope.py`，并加反漂移断言 `api-py/tests/test_temp_merchant_cleanup_coverage.py`（覆盖集合必须 ⊇ 动态发现集合）。
   · 判据：**孤儿门禁是这类清理的唯一自动校验**——凡在开发库造过实体的单，收尾必跑它。
 
 ---

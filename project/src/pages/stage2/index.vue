@@ -77,7 +77,9 @@
               :key="task.taskId"
               :task="getDisplayTask(task)"
               :tick-delay="tIdx * 40"
-              :show-detail="getTaskInteraction(task.taskId) === 'trademark' || task.taskId === 'T2.3.1'"
+              :show-detail="
+                hasTaskActionType(task, 'trademark_lookup') || hasTaskActionType(task, 'title_optimize')
+              "
               @toggle="handleTaskToggle(task)"
               @action="handleTaskAction"
             >
@@ -91,7 +93,7 @@
                   <text class="guide-entry__text">查看图片示例</text>
                 </view>
                 <view
-                  v-if="task.taskId === 'T2.3.2'"
+                  v-if="hasTaskActionType(task, 'image_optimize')"
                   class="guide-entry guide-entry--ai"
                   @tap.stop="openImageOptimize"
                 >
@@ -102,24 +104,25 @@
               <template #detail-extra>
                 <!-- @tap.stop 防止操作交互区时误触卡片展开/收起 -->
                 <view @tap.stop>
-                <!-- T2.3.1：AI 商品标题优化（accordion 面板） -->
-                <TitleOptimizePanel v-if="task.taskId === 'T2.3.1'" />
+                <!-- 行为分发（#FE-29）：唯一依据 = 后端 actionType（缺失/未知按 none），不再按 taskId 判断 -->
+                <!-- title_optimize：AI 商品标题优化（accordion 面板） -->
+                <TitleOptimizePanel v-if="hasTaskActionType(task, 'title_optimize')" />
                 <TrademarkSearch
-                  v-if="getTaskInteraction(task.taskId) === 'trademark'"
+                  v-if="hasTaskActionType(task, 'trademark_lookup')"
                   @complete="store.markTaskCompleted(task.taskId)"
                 />
-                <view v-else-if="task.taskId === 'T2.1.4'" class="advisor-entry">
+                <view v-else-if="hasTaskActionType(task, 'advisor_entry')" class="advisor-entry">
                   <text class="advisor-entry__subtitle">联系拍拍商家顾问催审</text>
                   <text class="advisor-entry__desc">审核周期较长时可添加拍拍商家顾问企微催审，获取一对一开店指导。</text>
                 </view>
                 <ExcelUpload
-                  v-else-if="getTaskInteraction(task.taskId)?.startsWith('upload:')"
-                  :type="getUploadType(getTaskInteraction(task.taskId))"
+                  v-else-if="hasTaskActionType(task, 'data_upload') && resolveDataUploadType(task)"
+                  :type="resolveDataUploadType(task)"
                   @complete="store.markTaskCompleted(task.taskId)"
                 />
                 <DataForm
-                  v-else-if="getTaskInteraction(task.taskId)?.startsWith('form:')"
-                  :form-key="getTaskInteraction(task.taskId)"
+                  v-else-if="hasTaskActionType(task, 'data_form') && resolveDataFormKey(task)"
+                  :form-key="resolveDataFormKey(task)"
                   @complete="store.markTaskCompleted(task.taskId)"
                 />
                 </view>
@@ -133,7 +136,7 @@
       <IcpFooter />
     </view>
 
-    <!-- 商家顾问企微二维码弹窗（参考阶段一 T1.3.7） -->
+    <!-- 商家顾问企微二维码弹窗（参考阶段一 T1.3.8） -->
     <view v-if="showQRModal" class="modal-mask" @tap="showQRModal = false">
       <view class="modal-box modal-box--large" @tap.stop>
         <view class="modal-header">
@@ -231,7 +234,13 @@ import { onLoad, onPageScroll } from '@dcloudio/uni-app';
 import { trackPageView, trackEvent, EventType } from '@/utils/track';
 import { fetchMerchantCategories } from '@/api/category';
 import { useStage2Store } from '@/store/modules/stage2';
-import { getTaskInteraction, isTaskEnabled, isTaskCompleted } from '@/utils/stage2';
+import {
+  hasTaskActionType,
+  isTaskEnabled,
+  isTaskCompleted,
+  resolveDataFormKey,
+  resolveDataUploadType,
+} from '@/utils/stage2';
 import { getMerchantNickname } from '@/utils/merchant';
 import { getAdvisorQrCodeUrl } from '@/api/stage2';
 import { PRODUCT_GUIDE_IMAGES } from '@/constants/productGuide';
@@ -438,14 +447,15 @@ const unlockHint = computed(() => stage2Stages.value.find((s) => s.locked)?.unlo
 
 /**
  * 展示用任务副本：detail 为空时回退到 description（后端暂未写 detail），
- * T2.1.4 增加「查看二维码」操作按钮（参考阶段一 T1.3.7）。
+ * T2.1.4 增加「查看二维码」操作按钮（参考阶段一 T1.3.8）。
  */
 function getDisplayTask(task: SecondLevelTask): SecondLevelTask {
   const display = { ...task };
   if (!display.detail) {
     display.detail = display.description;
   }
-  if (display.taskId === 'T2.1.4') {
+  // advisor_entry（原 T2.1.4）：按钮文案「查看二维码」（#FE-29：按 actionType 判断，不再看 taskId）
+  if (hasTaskActionType(display, 'advisor_entry')) {
     display.actionText = '查看二维码';
   }
   return display;
@@ -526,12 +536,6 @@ function confirmListingCancel() {
   }
 }
 
-/** 解析上传类型（upload:trade -> trade） */
-function getUploadType(interaction: string | undefined): 'trade' | 'traffic' | 'product' {
-  const type = interaction?.replace('upload:', '');
-  return type === 'trade' || type === 'traffic' || type === 'product' ? type : 'trade';
-}
-
 /** 滚动到指定一级任务分组 */
 function scrollToStage(idx: number) {
   activeIndex.value = idx;
@@ -549,9 +553,15 @@ function goBoard() {
   uni.navigateTo({ url: '/pages/data-center/index' });
 }
 
-/** 任务操作按钮：T2.1.4 打开企微二维码弹窗，其余无链接任务兜底提示 */
-function handleTaskAction(taskId: string) {
-  if (taskId === 'T2.1.4') {
+/**
+ * 任务操作按钮分发（#FE-29；入参为整个 task，与 TaskCard 新 emit 契约一致）
+ * @description 唯一依据 = 后端 actionType（缺失/空/未知一律按 none，见 resolveTaskActionType）：
+ *              advisor_entry → 企微二维码弹窗；其余（含 none 且无 actionUrl）保持原有兜底提示。
+ *              模板上的 title_optimize / trademark_lookup / image_optimize / data_form / data_upload 由
+ *              hasTaskActionType 直接表达，不经此处。
+ */
+function handleTaskAction(task: SecondLevelTask) {
+  if (hasTaskActionType(task, 'advisor_entry')) {
     showQRModal.value = true;
     return;
   }
@@ -827,7 +837,7 @@ onMounted(async () => {
   }
 }
 
-/* 企微二维码弹窗（参考阶段一 T1.3.7） */
+/* 企微二维码弹窗（参考阶段一 T1.3.8） */
 .modal-mask {
   position: fixed;
   top: 0;

@@ -4,7 +4,8 @@
  *              对齐《阶段隔离规则与阶段二任务清单》§1.2 / §2 / §3。
  *              仅统计 status=1（启用）任务，default_completed=1 按已完成计入。
  */
-import { PHASE1_STAGE_IDS, PHASE2_STAGE_IDS, STAGE2_INTERACTIVE_TASKS } from '../constants/stage2';
+import { PHASE1_STAGE_IDS, PHASE2_STAGE_IDS } from '../constants/stage2';
+import { resolveTaskActionType, type TaskActionType } from '../constants/task';
 
 /** 最小结构类型（与 types/task.ts 兼容） */
 export interface StageTaskLike {
@@ -106,9 +107,41 @@ export function isStage2Unlocked(stages: StageLike[]): boolean {
   return stage2Stages.some((s) => s.locked !== true);
 }
 
-/** 获取任务的交互组件类型（无交互返回 undefined） */
-export function getTaskInteraction(taskId: string): string | undefined {
-  return STAGE2_INTERACTIVE_TASKS[taskId];
+/** data_form 的 actionParam 取值（表单 key，与后端 DTO/schema 对齐） */
+const DATA_FORM_KEYS = ['star', 'product-count', 'health-score'] as const;
+/** data_upload 的 actionParam 取值（上传类型） */
+const DATA_UPLOAD_TYPES = ['trade', 'traffic', 'product'] as const;
+
+/**
+ * 任务行为类型判定（阶段二 + 数据分析专区共用，#FE-29）
+ * @description 唯一依据 = 后端 actionType 投影字段；缺失/空/未知值由 resolveTaskActionType 归一为 none
+ *              （不白屏、按钮不失效）。禁止再按 taskId 字面量判断行为。
+ */
+export function hasTaskActionType(
+  task: { actionType?: string | null } | null | undefined,
+  type: TaskActionType,
+): boolean {
+  return resolveTaskActionType(task?.actionType) === type;
+}
+
+/**
+ * 读取 data_form 的表单 key（actionParam 是不透明标识）
+ * @returns 合法取值返回该值；缺失/非法返回 undefined（调用方据此不渲染表单，不臆测默认值）
+ */
+export function resolveDataFormKey(task: { actionParam?: string | null } | null | undefined): string | undefined {
+  const raw = String(task?.actionParam ?? '').trim();
+  return (DATA_FORM_KEYS as readonly string[]).includes(raw) ? raw : undefined;
+}
+
+/**
+ * 读取 data_upload 的上传类型（actionParam 是不透明标识）
+ * @returns 合法取值返回该值；缺失/非法返回 undefined（绝不兜底到 trade，避免把文件写进错误的表）
+ */
+export function resolveDataUploadType(
+  task: { actionParam?: string | null } | null | undefined,
+): 'trade' | 'traffic' | 'product' | undefined {
+  const raw = String(task?.actionParam ?? '').trim();
+  return (DATA_UPLOAD_TYPES as readonly string[]).includes(raw) ? (raw as 'trade' | 'traffic' | 'product') : undefined;
 }
 
 /** 本地时区今天的日期字符串（YYYY-MM-DD），用于表单 dataDate 默认值 */

@@ -1,15 +1,15 @@
 /**
  * 商家管理页（admin 端）用户可见文案 —— 管理后台唯一真源
  *
- * @description 登记：project/docs/开发规则.md §8.2（#AF-15 / #AF-14 商家清单）。
+ * @description 登记：project/docs/任务管理后台开发标准.md §十一（#AF-15 / #AF-14 商家清单）。
  *              字段标签与商家端 H5（project/src/constants/merchant.ts #33/#34）措辞一致；
- *              两端是独立应用、无法共享常量文件，故各自单点定义，改动须同步 §8.2。
+ *              两端是独立应用、无法共享常量文件，故各自单点定义：管理后台改动同步本文档 §十一，商家端改动同步 project/docs/开发规则.md §8.2。
  */
 
 /** 抽屉顶部登记信息区标题 */
 export const MERCHANT_INFO_TITLE = '商家登记信息'
 
-/** 字段标签（与 §8.2 #33/#34 同措辞） */
+/** 字段标签（与商家端 project/docs/开发规则.md §8.2 #33/#34 同措辞） */
 export const MERCHANT_INFO_JD_ID_LABEL = '京麦商家ID'
 export const MERCHANT_INFO_SHOP_NAME_LABEL = '店铺名称'
 

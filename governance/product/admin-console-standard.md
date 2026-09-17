@@ -3,6 +3,7 @@
 > 版本：v1.0  
 > 日期：2026-07-23  
 > 状态：**唯一标准（后续开发必须遵守）**
+> 变更记录（2026-09-16）：新增 **§十一 用户可见文案登记**（#AF-20「行为类型 / 行为参数」文案 + #AF-21 `type` / `completionType` 下拉补齐文案）；同步 **§10.2 任务类型枚举** 补 5 个库内既有取值。口径：**dev 已验证、生产未部署**。
 
 ---
 
@@ -878,12 +879,19 @@ export enum TaskType {
   MANDATORY = 'mandatory',    // 必做
   SUGGESTED = 'suggested',    // 建议
   GUIDE = 'guide',            // 引导
+  // #AF-21 追加（2026-09-16）：库内既有取值，此前下拉/校验未收录；真源 = DB second_level_task.type + 后端 Literal
+  FORM = 'form',              // 表单
+  JUMP = 'jump',              // 跳转
+  UPLOAD = 'upload',          // 上传
 }
 
 export enum CompletionType {
   SYSTEM_CHECK = 'system_check',    // 系统检测
   MANUAL_SUBMIT = 'manual_submit',  // 手动提交
   CLICK_READ = 'click_read',        // 点击已读
+  // #AF-21 追加（2026-09-16）：库内既有取值，此前下拉/校验未收录；真源 = DB second_level_task.completionType + 后端 Literal
+  FORM_SUBMIT = 'form_submit',      // 表单提交
+  FILE_UPLOAD = 'file_upload',      // 文件上传
 }
 ```
 
@@ -896,6 +904,91 @@ export enum AdminRole {
   VIEWER = 'viewer',
 }
 ```
+
+## 十一、用户可见文案登记（管理后台唯一真源）
+
+> **本节是管理后台（`admin/`）用户可见文案的唯一登记处** —— 新增或修改任何 admin 端文案必须先在此登记（文案 + 位置 + 触发条件 + 依据单号 + 状态）。依据：本文 §1.1（本文档是任务管理后台开发的唯一标准）与 owner 映射（管理后台 owner = `admin-frontend`）。
+> **与商家端文案册的边界**：`project/docs/开发规则.md` §8.2 面向商家端 `project/src`（H5、uni-app）；管理后台文案集中定义在 `admin/src/constants/*`，登记在本节。两端是**独立应用、无法共享常量文件**，同一句文案两端各自单点定义，不视为重复；改动须同步各自真源。
+> **状态口径**：本轮登记项均为 **dev 已验证、生产未部署**（生产部署须过 `dev-docs/部署规则.md` 确认闸）。
+
+### 11.1 本轮登记（#AF-20 / #AF-21，2026-09-16）
+
+| # | 文案 | 位置（常量 → 接入点） | 触发条件 | 依据 | 状态 |
+|---|------|---------------------|----------|------|------|
+| 1 | 行为类型 | `admin/src/constants/second-level-task.ts:76`（`ACTION_TYPE_FIELD_LABEL`）→ `admin/src/pages/second-level-task/edit.vue:94` 表单 label | 渲染任务编辑页「行为类型」表单项时 | #AF-20 | **本次新增（#AF-20）**；dev 已验证、生产未部署 |
+| 2 | 行为参数 | 同文件 `:77`（`ACTION_PARAM_FIELD_LABEL`）→ `edit.vue:106` 表单 label | 同上（仅 `data_form` / `data_upload` 时可编辑，其余取值禁用） | #AF-20 | 同上 |
+| 3 | 行为类型（列表列标签） | 同文件 `:80`（`ACTION_TYPE_COLUMN_LABEL`）→ `admin/src/pages/second-level-task/index.vue:39` 表头 | 渲染任务列表表头时 | #AF-20 | 同上 |
+| 4 | `actionType` 10 个下拉项文案（`none` 置首，逐项见 #5~#14） | 同文件 `:19-29`（`ACTION_TYPE_OPTIONS`）→ `edit.vue:96-101`；`:33-35` 派生 `ACTION_TYPE_LABELS` 供列表只读展示 | 打开「行为类型」下拉时逐项展示 | #AF-20 | 同上 |
+| 5 | 无特殊行为（有外链则打开外链） | 同上（取值 `none`） | 下拉首项（列表只读列中 `none` 不展示该文案，用占位 `—`） | #AF-20 | 同上 |
+| 6 | 弹商家顾问企微二维码 | 同上（取值 `advisor_qr`） | 下拉项 | #AF-20 | 同上 |
+| 7 | 卡内经营类目选择器 | 同上（取值 `category_picker`） | 下拉项 | #AF-20 | 同上 |
+| 8 | 卡内资费选择器 + fee 锚点定位 | 同上（取值 `fee_picker`） | 下拉项 | #AF-20 | 同上 |
+| 9 | 商标注册号查询表单 | 同上（取值 `trademark_lookup`） | 下拉项 | #AF-20 | 同上 |
+| 10 | AI 标题优化面板 | 同上（取值 `title_optimize`） | 下拉项 | #AF-20 | 同上 |
+| 11 | 图片优化区块 | 同上（取值 `image_optimize`） | 下拉项 | #AF-20 | 同上 |
+| 12 | 顾问入口区块 | 同上（取值 `advisor_entry`） | 下拉项 | #AF-20 | 同上 |
+| 13 | 数据分析专区表单录入 | 同上（取值 `data_form`） | 下拉项 | #AF-20 | 同上 |
+| 14 | 数据分析专区文件上传 | 同上（取值 `data_upload`） | 下拉项 | #AF-20 | 同上 |
+| 15 | `行为类型（行为参数）` 组合展示格式（label 后附「（参数值）」） | `index.vue:138-141`（`actionTypeText`：label + `（` + `actionParam` + `）`） | 列表只读列中带参数的行为类型行（便于核对「哪个表单 / 哪种上传」） | #AF-20 | 同上 |
+| 16 | 提交的内容有误，请检查后重试 | `second-level-task.ts:87`（`ACTION_PAIR_VALIDATION_MESSAGE`） | 提交时 `data_*` 缺 `actionParam`、或非 `data_*` 却带 `actionParam` → 前端本地拦截（**与后端 400 同句**，取自统一校验出口原文，非新造） | #AF-20（后端真源 `app/core/error_handlers.py::VALIDATION_MESSAGE`） | 同上；本句属后端 `message` 复用，登记目的是**可检索的归属与触发条件** |
+| 17 | 必做 / 建议 / 引导 | `second-level-task.ts:48-50`（`TASK_TYPE_OPTIONS` 前 3 项） | 「任务类型」下拉 | 既有文案（#AF-21 复核：标签与顺序**保持不变**） | 既有，本次仅登记 |
+| 18 | 表单 / 跳转 / 上传 | 同文件 `:51-53`（追加项，对应库内真实取值 `form` / `jump` / `upload`） | 同上 | #AF-21 | **本次新增（#AF-21）**；dev 已验证、生产未部署 |
+| 19 | 点击已读 / 手动提交 / 系统检测（兼容旧任务） | 同文件 `:63-65`（`COMPLETION_TYPE_OPTIONS` 前 3 项） | 「完成方式」下拉 | 既有文案（#AF-21 复核：标签与顺序**保持不变**） | 既有，本次仅登记 |
+| 20 | 表单提交 / 文件上传 | 同文件 `:66-67`（追加项，对应库内真实取值 `form_submit` / `file_upload`） | 同上 | #AF-21 | **本次新增（#AF-21）**；dev 已验证、生产未部署 |
+| 21 | 库内未知取值兜底项（label = 库内原值本身，不新增字面量） | `edit.vue:193-198`（`withUnknownOption`）；列表只读同口径 `index.vue:135,144` | 库内 `type` / `completionType` 出现下拉之外的取值时，**如实显示原值**（不静默改成默认值、不隐藏、提交不丢原值） | #AF-21 | **本次新增（#AF-21）**；无新增字面量 |
+
+补充规则：
+
+1. **单一来源**：以上文案全部定义在 `admin/src/constants/second-level-task.ts`；页面不得出现第二份字面量（本文 §8.2 代码审查清单「DTO校验完整」同精神）。
+2. **枚举真源不在本节**：`type` / `completionType` / `actionType` 的**取值集合**真源是数据库列 + 后端校验（`api-py/app/api/v1/admin_task.py` 的 `TaskType` / `CompletionType` Literal，及 `project/docs/后端技术方案.md` §8.3.9）；本节只登记**展示文案**。本文 §10.2 的枚举清单已按 #AF-21 同步补齐。
+3. **不新造同义句**：错误/校验提示一律复用后端 `message` 原文（同商家端 `project/docs/开发规则.md` §8.1 第 3 条口径）。
+4. **跨端同句不重复登记**：管理后台与商家端若出现同一句文案，分别在各自真源登记，不互相引用为「重复」。
+
+### 11.2 迁入登记（原《开发规则》§8.2 的管理后台文案；#PL-15，2026-09-16）
+
+> **迁入原因**：`project/docs/开发规则.md` §8.2 面向商家端（`project/src`），历史上混入了管理后台文案；按本文档（管理后台文案唯一真源）归属，本批 **37 行**迁入本表。
+> **逐字未改**：文案、位置（常量键）、触发条件、依据与状态**全部照录原文**（取自已发布快照 `frontend-rules.md`，sha256 = 迁移前 `开发规则.md` 的 `9753CBCD…4AD176`，逐字可核）；首列「原 #N」= `开发规则.md` §8.2 的**原始登记编号**（该表编号 1~76 **不重排**，原位置保留「已迁出」标注以便按号追溯）。
+> **本批范围**：原 #8~#12（管理后台退出登录）/ #20~#32（AI 配置页）/ #43~#46（商家登记信息抽屉）/ #61~#68（商家清单·商家进度）/ #69~#75（同店账号）。**未迁**的相邻号段（如 #76「该商家已被登记」）经核对属**商家端**（前端无字面量、经 `project/src/api/*` 透传），保留原表。
+
+| 原 # | 文案 | 位置（常量 → 接入点） | 触发条件 | 依据 | 状态 |
+|------|------|---------------------|----------|------|------|
+| 原 #8 | 退出登录 | `admin/src/constants/auth.ts`（常量 `LOGOUT_ENTRY_TEXT`；管理后台用户区下拉菜单项，接入于 `admin/src/components/Layout/index.vue`） | 管理后台已登录时用户区菜单显示入口；点击打开二次确认弹窗 | #AF-13（用户 2026-09-14「管理后台也要加退出登录」）；文案风格与商家端 #3 一致 | **本次新增（#AF-13）** |
+| 原 #9 | 退出登录（确认弹窗标题） | 同文件（常量 `LOGOUT_CONFIRM_TITLE`；Element Plus `ElMessageBox` 标题） | 打开退出确认弹窗时展示 | #AF-13 | **本次新增（#AF-13）** |
+| 原 #10 | 退出后需重新登录才能继续管理后台，确认退出吗？ | 同文件（常量 `LOGOUT_CONFIRM_MESSAGE`；确认弹窗正文） | 打开退出确认弹窗时展示（说明退出后果；句式与商家端 #5 一致，仅场景词改为「管理后台」） | #AF-13 | **本次新增（#AF-13）** |
+| 原 #11 | 取消 | 同文件（常量 `LOGOUT_CONFIRM_CANCEL_TEXT`；确认弹窗次要按钮） | 退出确认弹窗的取消动作（不退出、仅关闭弹窗） | #AF-13 | **本次新增（#AF-13）** |
+| 原 #12 | 确认退出 | 同文件（常量 `LOGOUT_CONFIRM_OK_TEXT`；确认弹窗主按钮） | 确认执行退出：清 `admin_token` / `admin_info` 并跳 `/login`（无额外 toast；管理后台 token 与商家端互相独立，只清 admin 自己的） | #AF-13 | **本次新增（#AF-13）** |
+| 原 #20 | AI 配置 | `admin/src/constants/ai-config.ts`（常量 `AI_CONFIG_MENU_TEXT`；菜单项 + 页面标题，接入于 `admin/src/components/Layout/index.vue` 与 `admin/src/router/index.ts` meta.title） | super_admin 登录后侧栏显示入口；点击进入 AI 分入口配置页 | #AF-14（P7 v1.1 方案 §六；用户 2026-09-14） | **本次新增（#AF-14）** |
+| 原 #21 | AI 配置页顶部说明（密钥留空=不修改、清空=回落 env） | 同文件（常量 `AI_CONFIG_PAGE_INTRO_TEXT`；页面顶部 `el-alert`） | 进入 AI 配置页即展示（说明写入语义，避免误改） | #AF-14（P7 §5.3 写入契约） | **本次新增（#AF-14）** |
+| 原 #22 | 三入口展示名（AI 经营分析 / 主图优化 / 标题优化） | 同文件（常量 `AI_CONFIG_ENTRY_LABELS`；入口卡片标题） | 渲染三入口卡片标题时 | #AF-14（任务单 §3.2） | **本次新增（#AF-14）** |
+| 原 #23 | 字段标签（密钥（api_key）/ 接口地址（base_url）/ 模型（model）/ 超时（ms）/ 最大 tokens / 每日限流 / 启用） | 同文件（常量 `AI_CONFIG_FIELD_LABELS`；表单 `el-form-item` label） | 渲染配置表单字段标签时 | #AF-14（P7 §6.2 字段表） | **本次新增（#AF-14）** |
+| 原 #24 | 保存 / 测试连接 / 清除自定义密钥 | 同文件（常量 `AI_CONFIG_SAVE_TEXT` / `AI_CONFIG_VERIFY_TEXT` / `AI_CONFIG_CLEAR_KEY_TEXT`；各入口卡片操作按钮） | 点击触发对应动作：保存（仅提交 dirty 字段）/ 连通性自检 / 显式清除回落 env | #AF-14（P7 §6.2） | **本次新增（#AF-14）** |
+| 原 #25 | 密钥正常 / 未配置密钥（回落 env）/ 加密密钥不匹配，当前回落 env | 同文件（常量 `AI_CONFIG_KEY_STATUS_OK_TEXT` / `AI_CONFIG_KEY_STATUS_NONE_TEXT` / `AI_CONFIG_KEY_STATUS_DECRYPT_FAILED_TEXT`；入口卡片状态标签） | 按后端 `apiKeyStatus`（ok / none / decrypt_failed）渲染；`decrypt_failed` 用 danger 样式显著告警，不吞成空值 | #AF-14（任务单 §3.3；P7 §5.2 状态枚举） | **本次新增（#AF-14）** |
+| 原 #26 | 已配置：{掩码}（留空表示不修改）/ 未配置（留空表示不修改） | 同文件（常量 `AI_CONFIG_SECRET_PLACEHOLDER_CONFIGURED_PREFIX` / `AI_CONFIG_SECRET_PLACEHOLDER_SUFFIX` / `AI_CONFIG_SECRET_PLACEHOLDER_EMPTY`；密钥输入框 placeholder，**输入框初始为空、绝不预填掩码**） | 渲染密钥输入框占位时展示当前掩码（仅作提示，不进入表单值） | #AF-14（P7 §6.3 三条防线之一） | **本次新增（#AF-14）** |
+| 原 #27 | 指纹：{16hex} / 指纹：— / 最近修改：{人} @ {时间} / 最近修改：— | 同文件（常量 `AI_CONFIG_FINGERPRINT_PREFIX` / `AI_CONFIG_FINGERPRINT_EMPTY_TEXT` / `AI_CONFIG_UPDATED_PREFIX` / `AI_CONFIG_UPDATED_EMPTY_TEXT`；卡片只读元信息） | 渲染指纹与最近修改信息时（指纹用于确认「改的是不是同一把 key」） | #AF-14（P7 §6.2 只读列） | **本次新增（#AF-14）** |
+| 原 #28 | 密钥长度需在 8-256 之间 / 检测到掩码内容，请填写完整密钥 / 接口地址需以 http:// 或 https:// 开头 / 没有需要保存的修改 | 同文件（常量 `AI_CONFIG_API_KEY_LENGTH_TEXT` / `AI_CONFIG_API_KEY_MASK_REJECT_TEXT` / `AI_CONFIG_BASE_URL_FORMAT_TEXT` / `AI_CONFIG_NO_DIRTY_TEXT`；提交前本地校验提示） | 提交前拦截：空串/超长/掩码回写/格式非法/无 dirty 字段（避免发出必然 400 的请求） | #AF-14（P7 §5.3 + §6.3 第 3 条前移） | **本次新增（#AF-14）** |
+| 原 #29 | 已保存，当前进程立即生效；其它 worker 最多 60 秒后生效 | 同文件（常量 `AI_CONFIG_SAVE_OK_TEXT`；保存成功 toast） | PUT 返回 200 后提示（把多 worker 生效边界写在 UI 上） | #AF-14（P7 §6.2 保存提示） | **本次新增（#AF-14）** |
+| 原 #30 | 清除自定义密钥（确认框标题）/ 清除后该入口将回落使用环境变量（env）中的密钥，确认清除吗？/ 确认清除 / 取消 / 已清除自定义密钥，该入口已回落 env | 同文件（常量 `AI_CONFIG_CLEAR_CONFIRM_TITLE` / `AI_CONFIG_CLEAR_CONFIRM_MESSAGE` / `AI_CONFIG_CLEAR_CONFIRM_OK_TEXT` / `AI_CONFIG_CLEAR_CONFIRM_CANCEL_TEXT` / `AI_CONFIG_CLEAR_OK_TEXT`；`ElMessageBox` 二次确认 + 成功提示） | 点击「清除自定义密钥」时二次确认；确认后提交显式 `null`（回落 env） | #AF-14（P7 §5.3「显式 null」；任务单 §3.4） | **本次新增（#AF-14）**；注：`取消` 与 #11 字面量相同，建议后续抽公共按钮文案常量（本轮未改 #AF-13 文件） |
+| 原 #31 | 无权访问该页面（仅超级管理员） | 同文件（常量 `AI_CONFIG_ROLE_DENIED_TEXT`；`admin/src/router/index.ts` 路由守卫） | 非 super_admin 直连 `/ai-config` 时提示并重定向 `/dashboard` | #AF-14（P7 §5.4 三层防线之二） | **本次新增（#AF-14）** |
+| 原 #32 | 暂无 AI 配置 / 关闭后该入口整体回落 env 配置（不清空已存字段） | 同文件（常量 `AI_CONFIG_EMPTY_TEXT` / `AI_CONFIG_ENABLED_HINT_TEXT`；空态与启用开关旁提示） | 列表为空时展示空态；渲染「启用」开关说明时 | #AF-14（任务单 §3.2/§3.8） | **本次新增（#AF-14）** |
+| 原 #43 | 商家登记信息（抽屉信息区标题） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_INFO_TITLE`；`admin/src/pages/merchant-progress/index.vue` 详情抽屉 `el-descriptions` 标题） | 打开商家进度详情抽屉时展示 | #AF-15（用户 2026-09-14「点击商家带出京麦商家ID/店铺名称」） | **本次新增（#AF-15）** |
+| 原 #44 | 京麦商家ID / 店铺名称（管理后台字段标签） | 同文件（常量 `MERCHANT_INFO_JD_ID_LABEL` / `MERCHANT_INFO_SHOP_NAME_LABEL`；抽屉信息区字段标签，**措辞与 #33/#34 商家端一致**） | 渲染详情抽屉两个字段标签时 | #AF-15 | **本次新增（#AF-15）** |
+| 原 #45 | 未登记 | 同文件（常量 `MERCHANT_INFO_UNREGISTERED_TEXT`；字段空态） | `jd_merchant_id` / `shop_name` 为 `null` 或空串时展示（不显示 `null`、不隐藏该行） | #AF-15（任务单 §3.3） | **本次新增（#AF-15）** |
+| 原 #46 | 加载中… / 登记信息获取失败 | 同文件（常量 `MERCHANT_INFO_LOADING_TEXT` / `MERCHANT_INFO_FAILED_TEXT`；信息区加载态与失败态） | 打开抽屉后取回登记信息期间展示加载态；请求失败展示失败态（与「未登记」区分，不静默当空值） | #AF-15（任务单 §3.3/§3.4） | **本次新增（#AF-15）** |
+| 原 #61 | 商家清单（页面标题 / 侧栏菜单 / 面包屑 / 首页入口） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_LIST_TITLE`；接入 `admin/src/router/index.ts` meta.title、`components/Layout/index.vue` 菜单项、`pages/dashboard/index.vue` 快捷入口） | 渲染侧栏菜单与面包屑时 | #AF-14（商家清单页；用户 2026-09-15） | **本次新增（#AF-14）** |
+| 原 #62 | 商家进度（菜单项改名，原「商家管理」） | 同文件（常量 `MERCHANT_PROGRESS_TITLE`；同一批接入点） | 与新页「商家清单」区分：进度聚合页保留独立入口 | #AF-14（任务单 §2 改名并保持顺序） | **本次新增（#AF-14）** |
+| 原 #63 | 商家ID / 昵称 / 京麦商家ID / 店铺名（关键词占位）；查询；重置；全部 | 同文件（常量 `MERCHANT_LIST_KEYWORD_PLACEHOLDER` / `MERCHANT_LIST_SEARCH_TEXT` / `MERCHANT_LIST_RESET_TEXT` / `MERCHANT_LIST_ALL_OPTION_LABEL`；筛选区输入与按钮、下拉「全部」项） | 关键词输入占位（说明匹配范围）；点击查询/重置；下拉未选择时 | #AF-14（冻结契约：keyword 4 字段匹配） | **本次新增（#AF-14）** |
+| 原 #64 | 表格列标签：商家ID / 昵称 / 京麦商家ID / 店铺名 / 当前阶段 / 状态 / 最近活跃 / 注册时间 | 同文件（常量 `MERCHANT_LIST_COLUMN_LABELS`；`pages/merchant-list/index.vue` 表头） | 渲染商家清单表头时 | #AF-14（任务单 §1 列清单） | **本次新增（#AF-14）** |
+| 原 #65 | 阶段选项与标签：入驻准备（onboarding）/ 开店搭建（shop_setup） | 同文件（常量 `MERCHANT_STAGE_OPTIONS` / `MERCHANT_STAGE_LABELS`；筛选项与列表「当前阶段」列） | 阶段下拉渲染与列表映射（未登记取值回退原值，不隐藏） | #AF-14（冻结契约 stage 枚举） | **本次新增（#AF-14）** |
+| 原 #66 | 状态选项与标签：正常（1）/ 禁用（0）/ 已退出（2） | 同文件（常量 `MERCHANT_STATUS_OPTIONS` / `MERCHANT_STATUS_LABELS`；筛选项与列表「状态」列） | 状态下拉渲染与列表映射（注：当前后端投影未返回 status，列按空值占位展示，#PB-24 落地后自动生效） | #AF-14（冻结契约 status 枚举） | **本次新增（#AF-14）** |
+| 原 #67 | — （列表空值占位）/ 没有符合条件的商家（空态）/ 商家列表加载失败（错误态） | 同文件（常量 `MERCHANT_LIST_VALUE_PLACEHOLDER` / `MERCHANT_LIST_EMPTY_TEXT` / `MERCHANT_LIST_FAILED_TEXT`；列表单元格与页面状态） | 时间列/普通文本列为空、筛选无结果、请求失败时展示（不显示 null、不隐藏该行） | #AF-14（任务单 §1 空值/状态要求） | **本次新增（#AF-14）** |
+| 原 #68 | 查看商家清单 / 查看商家进度（首页快捷入口描述） | 同文件（常量 `MERCHANT_LIST_QUICK_DESC` / `MERCHANT_PROGRESS_QUICK_DESC`；`pages/dashboard/index.vue` 快捷入口） | 首页快捷入口列表渲染时 | #AF-14 | **本次新增（#AF-14）** |
+| 原 #69 | 同店账号（区块标题）/ 绑定账号（按钮）/ 解绑（成员行操作）/ 本账号（自身行标记） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_BINDING_TITLE` / `MERCHANT_BINDING_BIND_TEXT` / `MERCHANT_BINDING_UNBIND_TEXT` / `MERCHANT_BINDING_SELF_TAG_TEXT`；接入 `admin/src/pages/merchant-progress/index.vue` 抽屉「同店账号」区） | 打开商家进度详情抽屉时渲染区块标题与「绑定账号」按钮；成员行 `is_self=true` 显示「本账号」且**不渲染解绑按钮** | 设计单 `dev-docs/任务单/merchant-account-binding-design.md` §6.2；#AF-18（任务单 §1） | **本次新增（#AF-18）** |
+| 原 #70 | 该商家尚未登记京麦商家ID（区内提示）/ 需先在商家端登记京麦商家ID，才能绑定同店账号（按钮 tooltip） | 同文件（常量 `MERCHANT_BINDING_UNREGISTERED_TEXT` / `MERCHANT_BINDING_UNREGISTERED_TOOLTIP_TEXT`） | `merchant.jd_merchant_id` 为空/null 时：`el-alert`(info) 常显 + 「绑定账号」按钮**禁用**（hover 才出 tooltip；禁用态点击不弹窗） | 设计单 §6.2；#AF-18 | **本次新增（#AF-18）** |
+| 原 #71 | 表格列标签：商家ID / 昵称 / 状态 / 绑定时间 / 绑定人 / 操作 | 同文件（常量 `MERCHANT_BINDING_COLUMN_LABELS`；`pages/merchant-progress/index.vue` 成员表表头） | 渲染同店账号成员表表头时 | 设计单 §6.2 列清单；#AF-18 | **本次新增（#AF-18）** |
+| 原 #72 | 暂无同店账号绑定（空态）/ 同店账号信息加载失败（错误态） | 同文件（常量 `MERCHANT_BINDING_EMPTY_TEXT` / `MERCHANT_BINDING_FAILED_TEXT`） | 读取成功但成员为空 / `GET /api/admin/merchant/{merchantId}/bindings` 非 2xx 时（失败态只呈现错误条，**不叠加空表**） | #AF-18 | **本次新增（#AF-18）** |
+| 原 #73 | 绑定账号（弹窗标题）/ 商家ID / 昵称（搜索占位「商家ID / 昵称」）/ 搜索 / 取消 / 候选表列标签（商家ID / 昵称 / 状态）/ 没有匹配的账号 / 请先选择一个账号 | 同文件（常量 `MERCHANT_BINDING_DIALOG_TITLE` / `MERCHANT_BINDING_SEARCH_PLACEHOLDER` / `MERCHANT_BINDING_SEARCH_TEXT` / `MERCHANT_BINDING_CANCEL_TEXT` / `MERCHANT_BINDING_CANDIDATE_COLUMN_LABELS` / `MERCHANT_BINDING_CANDIDATE_EMPTY_TEXT` / `MERCHANT_BINDING_SELECTED_REQUIRED_TEXT`） | 打开绑定弹窗（默认空关键字拉第 1 页候选，**剔除当前商家自身**）；未选行点「绑定账号」给 warning | 设计单 §6.2（候选**只展示 3 列**：商家ID / 昵称 / 状态，**绝不展示手机号**）；#AF-18 | **本次新增（#AF-18）** |
+| 原 #74 | 确认绑定（标题）/ 绑定后两个账号共享阶段/任务进度；账号级标记（新手引导、欢迎消息、数据专区解锁标记）不共享（正文）/ 确认绑定（主按钮）；确认解绑（标题）/ 解绑后该账号不再共享本店进度；已完成的进度记录保持不变（正文）/ 确认解绑（主按钮） | 同文件（常量 `MERCHANT_BINDING_CONFIRM_TITLE` / `MERCHANT_BINDING_CONFIRM_MESSAGE` / `MERCHANT_BINDING_CONFIRM_OK_TEXT` / `MERCHANT_BINDING_UNBIND_CONFIRM_TITLE` / `MERCHANT_BINDING_UNBIND_CONFIRM_MESSAGE` / `MERCHANT_BINDING_UNBIND_CONFIRM_OK_TEXT`；`ElMessageBox.confirm`） | 绑定/解绑二次确认弹窗展示；点「取消」不发送任何写请求 | 设计单 §6.2 **原文照录**（不得改写）；#AF-18 | **本次新增（#AF-18）** |
+| 原 #75 | 绑定/解绑的结果提示（前端无字面量） | `admin/src/pages/merchant-progress/index.vue`（成功：`ElMessage.success(res.message)`；失败：由 `admin/src/api/request.ts` 拦截器按后端 `message` 原样 toast） | 绑定/解绑请求返回后 | 后端文案真源（如「该商家已被登记」「该商家尚未登记京麦商家ID，无法绑定」「该账号已绑定到其它商家」「不能绑定自身」「绑定关系不存在」）；前端**不新造同义句**（§8.1 第 3 条）；#AF-18 | **本次新增（#AF-18）** |
 
 ---
 

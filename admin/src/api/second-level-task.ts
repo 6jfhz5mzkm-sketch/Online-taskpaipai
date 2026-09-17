@@ -1,4 +1,4 @@
-﻿import request from './request'
+import request from './request'
 
 export interface SecondLevelTask {
   id: number
@@ -12,6 +12,10 @@ export interface SecondLevelTask {
   completionType: string
   actionText: string
   actionUrl: string
+  /** 行为类型（#PB-39 起投影带出；10 值枚举，未声明 = none） */
+  actionType: string
+  /** 行为参数（仅 data_form / data_upload 有值；不透明标识） */
+  actionParam: string | null
   tag: string
   defaultCompleted: number
   status: number
@@ -31,6 +35,10 @@ export interface CreateSecondLevelTaskParams {
   completionType: string
   actionText?: string
   actionUrl?: string
+  /** 行为类型（省略 = 落默认 none；非法值后端 400） */
+  actionType?: string
+  /** 行为参数：data_* 必填非空；其余行为必须为 null/空（显式 null = 清空） */
+  actionParam?: string | null
   tag?: string
   defaultCompleted?: number
   sortOrder?: number

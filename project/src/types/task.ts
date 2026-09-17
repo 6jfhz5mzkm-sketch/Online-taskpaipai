@@ -1,5 +1,7 @@
-﻿import { TaskStatus } from '@/constants/task';
+import { TaskStatus } from '@/constants/task';
+import type { TaskActionType } from '@/constants/task';
 export type { TaskStatus };
+export type { TaskActionType };
 
 /** 任务类型 */
 export type TaskType = 'mandatory' | 'suggested' | 'guide' | 'form' | 'upload' | 'jump';
@@ -49,6 +51,13 @@ export interface SecondLevelTask {
   completionType: CompletionType;
   actionText?: string;
   actionUrl?: string;
+  /**
+   * 任务行为类型（后端 actionType 投影；取值见 constants/task.ts 的 TASK_ACTION_TYPES）
+   * @description 前端行为分发的唯一依据；缺失/未知值按 `none` 处理（见 resolveTaskActionType）
+   */
+  actionType?: string;
+  /** 行为参数（当前仅 `data_form` / `data_upload` 使用，如 star / trade / traffic / product） */
+  actionParam?: string | null;
   tag?: string;
   defaultCompleted: number;
   status: number;

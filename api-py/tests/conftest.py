@@ -119,17 +119,22 @@ def make_temp_merchant(session, merchant_id=None, current_stage="shop_setup", st
 
 
 def cleanup_temp_merchant(session, merchant_id):
-    """删除临时商家及其全部派生数据(6 张 shop_* 表 + 2 张进度表,幂等)。
+    """删除临时商家及其全部派生数据(幂等,单一事务提交)。
 
-    进度表必须一并清理:update_progress 经 derive_phase2_unlock 会写
-    merchant_stage_progress(onboarding/shop_setup)与 merchant_task_progress,
-    只删 merchant 会留下孤儿进度行污染真实库(实测残留 14 行)。
+    **唯一实现 = `scripts/merchant_scope.py::purge_merchant_rows`**(#T-20-R3 起):覆盖范围由
+    `information_schema` 动态发现(列名 ∈ {`merchant_id`, `merchantId`},当前库 16 张),逐表按
+    **精确值** `WHERE <col> = :m` 删除,`merchant` 主表最后删;发现为空则结构化抛错(不静默)。
+
+    历史缺陷(勿回退):原实现硬编码 9 张表(6 张 shop_* + 2 张进度表 + merchant),漏 `event_log`
+    (页面浏览/登录前埋点),使「前端端到端 + 临时商家」验收收尾必然留下未登记孤儿、
+    `ORPHAN_GATE`(`scripts/check_orphan.py`)变红 —— 与铁律 5 记载的 #PB-24-3
+    (漏删 `event_log` / `merchant_stage_progress` → 16 行孤儿)同坑。
+    进度表必须一并清理:`update_progress` 经 `derive_phase2_unlock` 会写
+    `merchant_stage_progress`/`merchant_task_progress`(后者是**驼峰列**),只删 `merchant`
+    会留下孤儿进度行(实测残留 14 行)。
+
+    边界:禁止宽泛谓词(如 `LIKE 'mock_%'`);绝不删除 `merchant_id IS NULL` 的行。
     """
-    t = __import__("sqlalchemy").text
-    for table in ("shop_star_data", "shop_trade_data", "shop_traffic_data", "shop_product_data",
-                  "shop_product_count", "shop_health_score"):
-        session.execute(t("DELETE FROM " + table + " WHERE merchant_id = :m"), {"m": merchant_id})
-    session.execute(t("DELETE FROM merchant_stage_progress WHERE merchant_id = :m"), {"m": merchant_id})
-    session.execute(t("DELETE FROM merchant_task_progress WHERE merchantId = :m"), {"m": merchant_id})
-    session.execute(t("DELETE FROM merchant WHERE merchant_id = :m"), {"m": merchant_id})
-    session.commit()
+    from scripts.merchant_scope import purge_merchant_rows
+
+    purge_merchant_rows(session, merchant_id)

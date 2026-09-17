@@ -496,7 +496,7 @@ GET /api/feishu/advisor-qr
 
 | 维度 | 内容 |
 |------|------|
-| 功能 | 任务 T1.3.7 "添加商家顾问催审" 中展示企微二维码 |
+| 功能 | 任务 T1.3.8 "添加商家顾问催审" 中展示企微二维码 |
 | 请求参数 | 无 |
 | 响应 | { qr_url: string, talk: string } |
 | 涉及表 | 无（V1 用静态配置） |
@@ -649,7 +649,7 @@ POST /api/admin/ai-config/{entry}/verify  # 用当前生效配置做连通性自
 | `/api/admin/stage/{id}` | PUT | 更新阶段 | admin / super_admin | ⚠️ 同上（`api/stage.ts:44`、`store/modules/stage.ts:37`） |
 | `/api/admin/stage/{id}` | DELETE | 删除阶段 | admin / super_admin | ⚠️ 同上（`api/stage.ts:49`、`store/modules/stage.ts:49`） |
 | `/api/admin/group/…`（list / create / {id} GET·PUT·DELETE） | GET/POST/PUT/DELETE | 一级任务配置 | 读 = 需登录；写 = admin / super_admin | ✅ `api/first-level-task.ts:28-48`；`store/modules/task.ts:18,30,42,54`；`pages/first-level-task/index.vue:148,159`、`pages/dashboard/index.vue:65` |
-| `/api/admin/task/…`（list / create / {id} GET·PUT·DELETE） | GET/POST/PUT/DELETE | 二级任务配置 | 读 = 需登录；写 = admin / super_admin | ✅ `api/second-level-task.ts:44-64`；`store/modules/task.ts:67,79,91,103`；`pages/second-level-task/index.vue:74`、`edit.vue:126,128`、`pages/dashboard/index.vue:66` |
+| `/api/admin/task/…`（list / create / {id} GET·PUT·DELETE） | GET/POST/PUT/DELETE | 二级任务配置（**#PB-39 起请求/响应含 `actionType`/`actionParam`**，枚举与参数规则见 §8.3.9） | 读 = 需登录；写 = admin / super_admin | ✅ `api/second-level-task.ts:44-64`；`store/modules/task.ts:67,79,91,103`；`pages/second-level-task/index.vue:74`、`edit.vue:126,128`、`pages/dashboard/index.vue:66` |
 | `/api/admin/feedback` | GET | 反馈列表（状态/分类/日期筛选） | admin / super_admin | ✅ `pages/feedback/index.vue:104`（`api/feedback.ts:41`） |
 | `/api/admin/feedback/{id}` | PATCH | 处理反馈（status + admin_reply） | admin / super_admin | ✅ 同上（`api/feedback.ts:46`） |
 
@@ -924,6 +924,7 @@ GET /api/shop/summary?time_range=yesterday|7d|30d
 - `GET /api/task/stages`：按商家进度返回；未解锁时阶段二 stage 返回锁定壳（`locked:true`、`firstLevelTasks:[]`），解锁后返回 33 个任务（4/14/3/6/6）。
 - `GET /api/task/progress`：响应 `stage2_unlocked` / `phase1_remaining_task_ids` / `data_center_unlocked` 的口径见上方 API-03 主体（此处原为扩展补记，保留以便追溯）。
 - `POST /api/task/progress`：`pending`（取消完成）、task 启用态校验与解锁派生的完整规则见上方 API-04 主体（同上，保留追溯）。
+- **`GET /api/task/stages` 的二级任务投影（#PB-39 / schema v1.11，2026-09-16）**：二级任务新增 **`actionType`**（行为语义，10 值枚举，默认 `none`）与 **`actionParam`**（行为参数，**不透明标识**）两字段，位置紧随 `actionUrl`（与 DB 列序一致）。投影来自 **`app/services/task.py::second_level_dict` 单一处** ⇒ 商家端与管理端任务配置**同时生效**；枚举语义、参数规则与列定义见 **§8.3.9**。既有字段与本接口其它口径**一个不改**（纯增量）。
 - 解锁判定统一口径：`stage2_unlocked` 与 `merchant.current_stage='shop_setup'` 对齐（含运营一键解锁场景——运营写 `current_stage=shop_setup` 但不写完成记录时，前端以 `/api/merchant/info` 的 `current_stage` 为权威，`stage2_unlocked` 返回同值；任务路径回滚不覆盖运营手动解锁）。
 
 #### API-16：获取类目入驻资质要求（商家端 T1.1.2）
@@ -1084,6 +1085,7 @@ uv run alembic current
 3. ORM 声明同步对齐真源（仅补声明，不做 DDL）；
 4. 同步更新本文档（§三 目录规范 / 本章）；
 5. 提交 Git（提交授权见 `AGENTS.md` 第十四节）。
+6. **列注释（`column_comment`）属结构门禁项** —— 修改真源 `project/scripts/schema.sql` 的**列注释**时，必须**同批**把对应的 `ALTER TABLE … MODIFY COLUMN … COMMENT …` 纳入部署执行面；只改真源而不随批落 DDL ⇒ 上线后生产 `check_schema.py` 必红（**实证**：`#DB-24` 只改真源注释、未随批落 DDL ⇒ `#OPS-50` 上线后生产结构门禁 `column_comment:2` 失败）。流程侧自检清单见 `dev-docs/部署规则.md` §十。
 
 #### 8.3.5 数据导入/迁移的字符集硬口径（防双重编码乱码）
 
@@ -1148,6 +1150,42 @@ uv run alembic current
 | 孤儿巡检 | `merchant_binding_member.merchant_id` 被 `check_orphan.py` **动态发现**并纳入（按 `information_schema` 扫描，禁硬编码表名）；绑定时校验目标账号存在且未软删 ⇒ 期望 **0 孤儿**；出现孤儿即 `exit 1`（可见、不静默） |
 | 行数上界 | 组/成员行随运营手工操作增长（量级 = 账号数）；解绑**不删行** → 历史行单调累积（可审计，无清理需求） |
 | 不回写声明 | 绑定/解绑**不回写** `merchant.jd_merchant_id` / `current_stage` / `status`；进度共享靠**读取期并集**实现（**不做数据复制**，用户口径） |
+
+#### 8.3.9 任务行为语义字段 `actionType` / `actionParam`（v1.11 / #DB-23 + #PB-39）
+
+> 设计单：`dev-docs/任务单/action-type-design.md`（已评审，含裁决记录）；表结构真源 `project/scripts/schema.sql` **v1.11**（段 12 `second_level_task` 就地补两列，**未新建表**）。**DDL owner = database（#DB-23 已落地）**，本段只登记口径与列定义。动因：任务卡「点击后做什么」原由前端按 `taskId` 字面量硬编码（10 处判断 / 13 个任务），改号必须改前端；本字段把行为语义交给后端声明。
+
+| 项 | 口径 |
+|----|------|
+| `actionType` 列 | `VARCHAR(32) NOT NULL DEFAULT 'none'`（位于 `actionUrl` 之后、`actionParam`/`tag` 之前）。**未声明 = `none`**，`ADD COLUMN` 时全表自动落 `none`（可回滚、可幂等） |
+| `actionParam` 列 | `VARCHAR(64) DEFAULT NULL`。**只是不透明标识**（非 JSON / 非条件 / 非组件名 / 非文案），**仅** `data_form` / `data_upload` 使用 |
+| `actionType` 枚举（10 值，`none` 为默认） | `none`=无特殊行为（无 `actionUrl` 仅埋点；有 `actionUrl` 打开外链）／`advisor_qr`=弹商家顾问企微二维码／`category_picker`=卡内经营类目选择器／`fee_picker`=卡内资费选择器 + `fee` 锚点定位／`trademark_lookup`=商标注册号查询表单／`title_optimize`=AI 标题优化面板／`image_optimize`=图片优化区块／`advisor_entry`=顾问入口区块／`data_form`=数据分析专区表单录入（`actionParam` ∈ `star`/`product-count`/`health-score`）／`data_upload`=数据分析专区文件上传（`actionParam` ∈ `trade`/`traffic`/`product`） |
+| **参数规则（服务端强校验）** | `data_form` / `data_upload` **必须**带非空 `actionParam`；其余 8 个行为 **必须为空/NULL**。违反 → **400**，文案复用统一校验出口 `app/core/error_handlers.py::VALIDATION_MESSAGE`「提交的内容有误，请检查后重试」（**不新造文案**）。owner = `app/services/admin_task_config.py::_assert_action_pair`（部分更新按**与库内值合并后的有效组合**判定）；路由 `app/api/v1/admin_task.py` 的 `ActionType` Literal 只做枚举形状校验（同一套校验通道，无第二套） |
+| 省略语义 | 创建：省略 `actionType` → 落默认 `none`；省略 `actionParam` → `NULL`。更新：省略 = 不改；`actionParam` 显式 `null` = 清空（切换到非 `data_*` 时必须显式清空，否则 400） |
+| 移除 `actionUrl` 语义不变 | `actionUrl` **不是** `actionType` 取值（它是独立的 URL 字段，TaskCard 已按「有 URL 就打开」处理）；`actionType='none'` 且 `actionUrl` 非空 ⇒ 打开外链 |
+| 回填（#DB-23 已执行，51 行） | 默认全表落 `none`（含 2 行 `status=0`，不按 status 过滤）；例外 **13 行**按现存前端行为逐条回填（`T1.1.2`/`T1.1.3`/`T1.3.8`/`T2.1.2`/`T2.1.4`/`T2.3.1`/`T2.3.2` + 专区分发 6 行）；校验 `SELECT actionType, actionParam, COUNT(*) … GROUP BY 1,2` = **10 组 / 51 行** |
+| 边界（不做） | 不做规则引擎/可配置脚本（`actionType` 是**capability token**，只声明「需要哪种交互」，**不描述交互长什么样**）；不改 `type` / `completionType`（其陈旧枚举另立极小单）；不新增用户可见文案；不改进度/解锁口径 |
+| 上线顺序（硬约束） | **DB → PB →（AF / FE 可并行）→ T**：FE 依赖后端返回 `actionType`，若 FE 早于 DB/PB 上线则所有行为退化为 `none`（按钮不失效，但二维码/类目/资费入口静默消失） |
+| 实现位置 | `app/db/models/second_level_task.py`（两列）、`app/services/task.py::second_level_dict`（**单一投影**）、`app/services/admin_task_config.py`（参数规则 owner + 创建/更新接线）、`app/api/v1/admin_task.py`（`ActionType` Literal + DTO 字段）；用例 `api-py/tests/test_task_action_type.py` |
+
+#### 8.3.10 二级任务 `type` / `completionType` 枚举对齐（#PB-40）
+
+> 背景（**阻塞级**）：开发库存在越界取值，而后端 `Literal` 只有 3 值 ⇒ 这 8 条任务从管理后台保存**必 400**（编辑表单把库内旧值原样回传；#AF-20 已用真实 UI + API 逐项证实）。总控裁决（2026-09-16）：**扩展枚举到现实值、不改数据**（不把 8 行规范成 3 值——那等于改写业务配置并牵动既有测试）。
+
+| 列 | 列定义 | 现实取值（开发库 `SELECT DISTINCT`，合计 51 行） | 说明 |
+|----|--------|--------------------------------------------|------|
+| `type` | `VARCHAR(16) NOT NULL` | `mandatory` 12 / `suggested` 1 / `guide` 30 / **`form` 4** / **`jump` 1** / **`upload` 3**（**6 值**） | 主轴 = **运营重要度**（必做/建议/引导）。`form`/`jump`/`upload` 是 **旧轴遗留**（`actionType` 之前的行为轴）：**保留**以便存量行可原样保存，**不再新增**；**行为语义一律以 `actionType`（§8.3.9）为准** |
+| `completionType` | `VARCHAR(16) NOT NULL` | `system_check` 4 / `manual_submit` 9 / `click_read` 31 / **`form_submit` 4** / **`file_upload` 3**（**5 值**） | `form_submit`/`file_upload` 同为旧轴遗留，保留理由同上 |
+
+| 项 | 口径 |
+|----|------|
+| 越界行（8 条，**数据一行不动**） | `T2.1.2`(form/form_submit)、`T2.1.3`(jump/click_read)、`T2.5.1`/`T2.5.5`/`T2.5.6`(form/form_submit)、`T2.5.2`/`T2.5.3`/`T2.5.4`(upload/file_upload)。其中 **6 条正是 #PB-39 接入 `actionType` 的 `data_*` 任务** ⇒ 修复前**无法从管理后台编辑** |
+| 校验口径（两道） | ① 路由 `TaskType` / `CompletionType` Literal 补齐到现实值（DTO 层，非法 → **400** + 统一文案 `VALIDATION_MESSAGE`）；② 服务层 `app/services/admin_task_config.py::_assert_task_enums` **再兜一道**（列上无 CHECK 约束，任何调用方都不得把越界值写进库）。两处取值必须 = 开发库 `SELECT DISTINCT` |
+| 防漂移（硬，**#PB-40-R1 订正口径**） | `api-py/tests/test_task_enums_aligned.py::assert_db_values_covered` 断言 **库内取值 ⊆ 枚举**（`SELECT DISTINCT` − 允许值必须为空）——这才是「会导致该任务保存 400」的方向，命中即失败并**指名**越界取值；**反向（枚举值暂时没有任何行使用）不失败**，只记一行「未被任何行使用的取值」（`logger.info` + `[enum-report]`），避免「某唯一行被删/被改」造成**假红**（本项目已多次吃假红阻塞全链的亏，如 ORM 期望清单漂移）。另有：② `Literal == 服务层元组`（同源一致性，**相等**断言保持不变）；③ 「8 条越界行现值组合原样回传 → 200，且真实行前后快照逐字段一致（未 UPDATE、`updatedAt` 未变）」；④ 未知值 → 400（HTTP + 服务层守卫） |
+| 与 `actionType` 的关系 | `type` 的 `form/upload/jump` **不是**行为真源；行为真源 = `actionType`（§8.3.9）。本段保留它们只为「存量数据可原样保存」，避免后人把旧轴当行为契约 |
+| 实现位置 | `app/api/v1/admin_task.py`（两个 Literal）、`app/services/admin_task_config.py`（`TASK_TYPES` / `COMPLETION_TYPES` + `_assert_task_enums`）；用例 `api-py/tests/test_task_enums_aligned.py`（4 例） |
+| 已对齐（实测核对 2026-09-16） | `project/scripts/schema.sql` **v1.11** 段 12 的列注释**已经写全现实取值并注明旧轴遗留**：`type`（L306）「任务类型/重要度(mandatory=必做/suggested=建议/guide=引导;另存旧轴遗留值 form/jump/upload——属交互形态的旧轴残留,行为语义一律以 actionType 为准,勿再新增此类值)」、`completionType`（L307）「完成方式(system_check=系统校验/manual_submit=人工提交/click_read=点击阅读;另存旧轴遗留值 form_submit=表单提交/file_upload=文件上传——行为语义同样以 actionType 为准)」⇒ **DDL 注释侧无需再改** |
+| 本轮未做（待办） | 管理后台「任务配置」页下拉仍是 3 值 → **`#AF-21`**（后端已能原样保存现实值，前端下拉补齐后 UI 才与库一致）；前端商家端不涉及本枚举 |
 
 ---
 
@@ -1264,6 +1302,9 @@ FastAPI / Pydantic / SQLAlchemy 已提供的能力，禁止自己实现。新增
 | 2026-09-16 | **管理端商家清单：列表投影补 `status`（#PB-25）**：`app/services/merchant.py::list_all` 的投影由 8 字段扩为 **9 字段**——在 `current_stage` 后新增 `status`（整数 0 禁用 / 1 正常 / 2 已退出，与筛选参数同语义）；响应信封 `{list, total, page, page_size}` 与其余 8 字段**不变**，`created_at` 倒序不变；真源 API-17 响应形状行同步为 9 字段 | 前端 `#AF-14` 反馈的**真实契约缺口**：筛选（#PB-24）已实测生效，但列表「状态」列取不到数据（投影无 `status`），前端只能显示占位「—」。前端 `admin/src/api/merchant.ts` 已把 `status` 声明为**可选**，后端加字段即显示中文标签，故**不改前端**（属 #AF-14 交付面） | `project/docs/后端技术方案.md` §5.2 API-17 / §9.7；实现 `api-py/app/services/merchant.py`；用例 `api-py/tests/test_admin_merchant_ops.py`（投影键集由 8 键**收紧**为 9 键 + 三态逐条回读对账）；派生视图 `docs/前后端对接方案.md` |
 | 2026-09-16 | **账号绑定：1 个京麦商家ID ↔ N 个商家账号，只共享进度（#PB-36）**：新增**唯一接缝** `app/services/merchant_binding.py`（`resolve_group_merchant_ids` / `get_bindings` / `bind_member` / `release_member` / `jd_merchant_id_is_taken`）；进度读取改**组内并集**（`completedTasks` 按 taskId 去重、`completedAt` 取**最早**、阶段解锁/锁定壳/写路径响应/写入门禁四处按**组 OR**、`data_center_unlocked` = 本账号 persisted OR listing 并集派生），**写入仍只写本账号**、解绑只改 `active_key` 且**不动任何进度行**；登记新增**重复登记拒绝**（两条占用判据 → 400「该商家已被登记」，不写库、不回显占用方）+ 新内部通知 **`jd_duplicate_registration`**（正文脱敏、24h 去重、**先 400 后异步**发送——由 `ApiException.background` 承载旁路任务，因 FastAPI 注入的 `BackgroundTasks` 在异常路径实测不执行）；新增 **API-22** 三端点（GET 需登录 / POST·DELETE `admin`+，幂等、不暴露内部 id、`viewer` → 403）；绑定/解绑**成功响应 message 为中文专句**「绑定成功」/「已解绑」（信封 `{code:0,message,data}`，供管理后台直接做成功 toast）；真源新增 §5.2 **API-22**（含进度共享全局口径表）、**API-20 扩展**（唯一性判据 + 通知子块）、§4.3 **6 条文案**、§6.2 当前口径、**§8.3.8**（两表 + `dedupe_key` + 事件枚举）。**无 DDL、无新配置项、无 Redis/常驻任务**（共享靠读取期并集） | 用户诉求：同一京麦主体多账号时进度各自独立（A 完成 B 看不到、同一店铺被重复从零做起），且 `jd_merchant_id` 可被别的账号重复登记而无任何提示。用户已拍板 5 条口径（只共享进度 / 管理后台手工绑定 / 权限等同无主账号 / 支持解绑 / 重复登记拒绝 + 内部通知）。**一处与方案稿的偏离需总控知悉**：`internal_notify_log.event_type` 为 `VARCHAR(32)` + `STRICT_TRANS_TABLES`，方案稿的 `merchant_id_duplicate_registration`（34 字符）**实测报 1406**，故按「DDL 以 database 单落地为准」（方案 §4.2）取同义短名 `jd_duplicate_registration`（一行常量可回退） | `project/docs/后端技术方案.md` §4.3 / §5.2 API-20+API-22 / §6.2 / §8.3.8 / §9.7；实现 `api-py/app/services/{merchant_binding,task_progress,task,merchant,internal_notify}.py`、`api-py/app/api/v1/admin_merchant.py`、`api-py/app/core/{exceptions,error_handlers,utils}.py`；用例 `api-py/tests/test_merchant_binding.py`（21 例）；派生视图 `docs/前后端对接方案.md` |
 | 2026-09-16 | **后端收尾四件（#PB-37）**：**A** 移除 `config.py` 中 `INTERNAL_NOTIFY_RECEIVE_ID` 的**真实 open_id 默认值**(源码内硬编码 PII)→ **空串默认 + 只由 `.env`/环境变量注入**；留空 = 未配置 → 内部通知**显式跳过**(`internal_notify.py::_notify_skip_reason`,统一两条路径:开关关闭 / 接收人未配置)+ `logger.info`,不写行不发送、不拒启动、不影响业务返回；**B** `.env.example` 补齐 8 个缺失键(`ADMIN_LOGIN_MAX_ATTEMPTS`/`ADMIN_LOGIN_LOCK_MINUTES`/`ADMIN_LOGIN_RATE_MAX`/`ADMIN_LOGIN_RATE_WINDOW_SECONDS`/`IMAGE_OPT_TIMEOUT_MS`/`IMAGE_OPT_MAX_CONCURRENCY`/`TITLE_OPT_TIMEOUT_MS`/`TITLE_OPT_MAX_CONCURRENCY`,只写键名与默认值);**C** `merchant.py::list_all` docstring 由「8 字段投影」订正为 **9 字段**(#PB-25 起含 `status`);**E（阻断级修复）** `merchant_binding.py::release_member` 关组时**未退役最后一名活跃成员行** → 库内出现「组已关闭 + 该行仍 `active_key=1`」的自相矛盾状态,该账号永久占用 `uk_member_active` 槽位、**再也绑不回去**(实测:管理后台解绑后再绑被拒/500);现改为**关组同事务退役该组剩余全部活跃成员行**(只置 NULL + `released_at/by` 留痕,**不删行**),并补不变量复查 SQL(期望 0 行);用户可见后果:店内只有 2 个账号时解绑任一 ⇒ **绑定关系整体解除**(另一账号回到「1 人组 = 未绑定」),**进度行不删不清零**;**D** `merchant_binding.py::bind_member` 补**并发唯一键冲突**处理:捕获 `IntegrityError`(1062, `uk_group_active`/`uk_member_active`)→ `rollback()`(**不留半写行**)→ **重读当前绑定状态** → 结构化 400(新文案「**该京麦商家ID已有绑定组，请刷新后重试**」/ 复用「该账号已绑定到其它商家」),`logger.warning` 留痕;**不加锁、不重试**（设计 §3.2）。改造前该场景为 **HTTP 500** | A 源码硬编码 PII 违反「敏感字段不进代码默认值」,且运维无从发现通知其实没发;B 样板与 `config.py` 有 8 项差额,部署不知道可调项;C 文档串与实际投影冲突(#PB-25 后未订正);D 并发撞唯一键对运营表现为「服务器内部错误」,既不可解释也无排障线索 | `project/docs/后端技术方案.md` §4.3 / §5.2 API-21+API-22 / §9.7；实现 `api-py/app/core/config.py`、`api-py/app/services/{internal_notify,merchant,merchant_binding}.py`、`api-py/.env.example`；用例 `api-py/tests/test_merchant_binding.py`(26 例)；派生视图 `docs/前后端对接方案.md` |
+| 2026-09-16 | **任务行为语义字段 `actionType` / `actionParam` 接入（#PB-39；schema v1.11 / #DB-23）**：① ORM `SecondLevelTask` 补两列（`actionType VARCHAR(32) NOT NULL DEFAULT 'none'` / `actionParam VARCHAR(64) NULL`，与真源逐字一致）；② **单一投影** `app/services/task.py::second_level_dict` 在 `actionUrl` 之后带出两字段（纯增量、既有字段与顺序一个不改）⇒ 商家端 `GET /api/task/stages` 与管理端任务配置**同时生效**；③ 校验：`actionType` 只接受 **10 值枚举**（路由 `ActionType` Literal，与 `TaskType`/`CompletionType` 同一套校验通道），**参数规则 owner 在服务层** `admin_task_config.py::_assert_action_pair`（`data_form`/`data_upload` 必须带非空 `actionParam`；其余必须为空/NULL；部分更新按**与库内值合并后的有效组合**判定），违反 → **400 复用统一校验出口文案**「提交的内容有误，请检查后重试」（不新造句子）；④ 真源新增 **§8.3.9**（列定义 + 10 值枚举语义 + 参数规则 + 回填 10 组/51 行 + 边界与上线顺序）、API-03/API-04 扩展补 stages 投影、API-19 二级任务配置行标注、§9.7 本行 | 用户 2026-09-16 原话「给任务加 actionType 语义字段」；动因 = 任务卡行为由前端按 `taskId` 字面量硬编码（10 处判断 / 13 个任务），**改任务号必须改前端**（`#DB-22` 挪「签署协议」时暴露）。设计单 `dev-docs/任务单/action-type-design.md` 已评审、三条待拍板已裁决（阶段二+专区一并纳入 / 同时加 `actionParam` / 陈旧 `type`·`completionType` 枚举另立小单） | `project/docs/后端技术方案.md` §5.2 API-03+API-19 / §8.3.9 / §9.7；实现 `api-py/app/db/models/second_level_task.py`、`api-py/app/services/{task,admin_task_config}.py`、`api-py/app/api/v1/admin_task.py`；用例 `api-py/tests/test_task_action_type.py`（7 例）；派生视图 `docs/前后端对接方案.md` |
+| 2026-09-16 | **`type` / `completionType` 枚举对齐开发库现实值（#PB-40，阻塞级修复；数据一行不动）**：① `TaskType` 由 3 值补为 **6 值**（`mandatory`/`suggested`/`guide` + **`form`/`jump`/`upload`**）、`CompletionType` 由 3 值补为 **5 值**（`system_check`/`manual_submit`/`click_read` + **`form_submit`/`file_upload`**），严格等于开发库 `SELECT DISTINCT`（既有值顺序不变、新值追加在后）；② 服务层新增同源元组 `TASK_TYPES`/`COMPLETION_TYPES` + 兜底守卫 `_assert_task_enums`（DTO 之外任何调用方都写不进越界值；非法 → **400 复用统一文案**）；③ 新增用例 4 例：**防漂移**（**库内取值 ⊆ 枚举**——越界即失败并指名；枚举值未被使用只记报告、**不失败**，见 #PB-40-R1 口径订正）、**同源**（Literal == 服务层元组）、**8 条越界行往返**（各自现值组合原样回传 → **200**，且真实行前后快照逐字段一致）、**未知值 → 400**（HTTP 两条路径 + 服务层守卫）；④ 真源新增 **§8.3.10**（两列现实取值 + 旧轴遗留说明 + 两道校验 + 防漂移 + 待办：`schema.sql` 列注释仍 3 值需 database 纯注释 MODIFY）、§9.7 本行 | #AF-20 用真实 UI + API 逐项证实：这 8 条任务（含 #PB-39 刚接入 `actionType` 的 6 条 `data_*`）**从管理后台保存必 400**（编辑表单把库内旧值原样回传，后端 Literal 不认）⇒ 阻塞级，不再是「文档漂移以后再说」。总控裁决：扩展枚举到现实值，**不改数据**；`form/upload/jump` 属旧轴遗留，**保留但登记**，行为语义以 `actionType` 为准 | `project/docs/后端技术方案.md` §8.3.10 / §9.7；实现 `api-py/app/api/v1/admin_task.py`、`api-py/app/services/admin_task_config.py`；用例 `api-py/tests/test_task_enums_aligned.py`（4 例）；派生视图 `docs/前后端对接方案.md` |
+| 2026-09-16 | **阶段一任务序号同步（#PL-11）**：「签署协议」由 `T1.5.1` 调整为 **`T1.3.5`**（归属组 `T1.5`→`T1.3`、阶段 `opening`→`application`，位置移到「完成实名认证」之前），其后 `T1.3.5/6/7` 顺延为 `T1.3.6/7/8`；`T1.5` 组收拢为 3 个连续任务（`T1.5.1` 联系人信息及地址维护 / `T1.5.2` 开通京东钱包结算账户 / `T1.5.3` 缴费）。同步 §5.2 **API-09** 处「任务 `T1.3.7` 添加商家顾问催审」→ **`T1.3.8`**（仅改号，功能描述不变） | 用户裁决：签署协议前置到「完成实名认证」之前 | 阶段一任务编号与商家端任务卡展示；**开发库已执行（#DB-22），生产未执行** |
 
 
 ### 9.8 框架最大化利用原则

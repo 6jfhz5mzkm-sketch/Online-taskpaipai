@@ -49,7 +49,8 @@ def session():
     """本文件专用会话:**READ COMMITTED** —— 端点用另一连接提交,默认 REPEATABLE READ 会读到旧快照。"""
     s = SessionLocal(bind=engine.execution_options(isolation_level="READ COMMITTED"))
     yield s
-    # 收尾顺序:先按 id 清临时商家(conftest 助手覆盖 6 张 shop_* + 2 张进度表),再清自建绑定/任务/通知行
+    # 收尾顺序:先按 id 清临时商家(conftest 助手;覆盖范围 = scripts/merchant_scope.py 的动态发现,
+    # 不写死表数),再清自建绑定/任务/通知行
     for merchant_id in _MERCHANT_IDS:
         cleanup_temp_merchant(s, merchant_id)
     _MERCHANT_IDS.clear()
@@ -66,7 +67,7 @@ def stub_im_channel(monkeypatch):
     """
     from app.core.config import get_settings
 
-    monkeypatch.setenv("INTERNAL_NOTIFY_RECEIVE_ID", "ou_test_receive_id")
+    monkeypatch.setenv("INTERNAL_NOTIFY_RECEIVE_ID", "<OPEN_ID>_receive_id")
     get_settings.cache_clear()
     _SENT_TEXTS.clear()
 
@@ -982,7 +983,7 @@ def test_internal_notify_skips_when_receive_id_unconfigured(client, session, not
 
 def test_internal_notify_sends_when_receive_id_configured(client, session, notify_env):
     """#PB-37 A:已配置接收人 → 通知正常发送并落一条 sent 行(发送通道仍打桩,不打真实飞书)。"""
-    notify_env("ou_test_receive_id")
+    notify_env("<OPEN_ID>_receive_id")
     owner, other, jd = _trigger_duplicate_registration(client, session)
     try:
         resp = _register(client, other, jd)
@@ -992,7 +993,7 @@ def test_internal_notify_sends_when_receive_id_configured(client, session, notif
             text("SELECT status, target FROM internal_notify_log WHERE dedupe_key = :k"), {"k": "jd:" + jd}
         ).mappings().first()
         assert row is not None and row["status"] == "sent"
-        assert row["target"] == "ou_test_receive_id"
+        assert row["target"] == "<OPEN_ID>_receive_id"
     finally:
         _record_notify_rows(session, "jd:" + jd)
 

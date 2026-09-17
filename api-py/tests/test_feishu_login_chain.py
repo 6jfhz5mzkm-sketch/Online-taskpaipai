@@ -24,7 +24,7 @@ APP_SECRET = "test-app-secret"
 APP_TOKEN_OK = {"code": 0, "msg": "ok", "app_access_token": APP_TOKEN, "expire": 7200}
 OIDC_OK = {"code": 0, "msg": "success", "data": {"access_token": USER_TOKEN, "scope": "contact:user.base:readonly"}}
 USER_INFO_OK = {"code": 0, "msg": "success",
-                "data": {"open_id": "ou_test", "union_id": "on_test", "name": "测试用户", "avatar_url": "https://example.com/a.png"}}
+                "data": {"open_id": "<OPEN_ID>", "union_id": "on_test", "name": "测试用户", "avatar_url": "https://example.com/a.png"}}
 
 
 class _Resp:
@@ -74,7 +74,7 @@ def test_login_chain_success_sends_app_bearer(monkeypatch):
 
     result = feishu_service.login_feishu(None, AUTH_CODE)
 
-    assert result == {"open_id": "ou_test", "union_id": "on_test", "name": "测试用户",
+    assert result == {"open_id": "<OPEN_ID>", "union_id": "on_test", "name": "测试用户",
                       "avatar": "https://example.com/a.png"}
     assert len(calls["app"]) == 1
     assert calls["app"][0]["json"]["app_id"] == "cli_test_app"
@@ -120,7 +120,7 @@ def test_app_access_token_failure_does_not_poison_cache(monkeypatch):
     calls = _install_httpx(monkeypatch, app_token_payload=APP_TOKEN_OK, oidc_payload=OIDC_OK,
                            user_payload=USER_INFO_OK)
     result = feishu_service.login_feishu(None, AUTH_CODE)
-    assert result["open_id"] == "ou_test"
+    assert result["open_id"] == "<OPEN_ID>"
     assert len(calls["app"]) == 1
 
 

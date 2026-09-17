@@ -16,7 +16,9 @@
       strict=True 即移除条件的技术保障:若拦截被提前实现,用例会 XPASS → 测试套件变红,
       强制实现者回来撤掉标记,例外不会静默长期存在。
 
-隔离:临时商家(_test_ 前缀)+ 其派生行在 finally 清理。
+隔离:临时商家(_test_ 前缀,`conftest.make_temp_merchant` 建)+ 其派生行在 finally 经
+      `conftest.cleanup_temp_merchant` 清理(覆盖范围 = `scripts/merchant_scope.py` 的动态发现,
+      不写死表数)。
 """
 
 import uuid
@@ -25,6 +27,7 @@ import pytest
 from sqlalchemy import text
 
 from app.core.security import create_merchant_token
+from tests.conftest import cleanup_temp_merchant, make_temp_merchant
 
 # 3 条例外共用的 xfail 理由(单一真源;只描述缺口与移除条件,不写实现细节)
 _XFAIL_REASON = (
@@ -47,23 +50,17 @@ def _headers(merchant_id: str) -> dict:
 
 
 def _make_merchant(session, status: int, stage: str = "shop_setup") -> str:
-    merchant_id = "_test_status_" + uuid.uuid4().hex[:8]
-    session.execute(
-        text(
-            "INSERT INTO merchant (merchant_id, nickname, current_stage, status) "
-            "VALUES (:m, '_test 商家', :s, :st)"
-        ),
-        {"m": merchant_id, "s": stage, "st": status},
+    """建临时商家(status 可变)——统一走 conftest 助手(#T-20-R3),不再自写 INSERT。
+
+    conftest.make_temp_merchant 的 current_stage / status 均可覆盖,故本文件无需自建建商家逻辑;
+    清理同样交由 cleanup_temp_merchant(覆盖范围 = scripts/merchant_scope.py 的动态发现,当前库 16 张)。
+    """
+    return make_temp_merchant(
+        session,
+        merchant_id="_test_status_" + uuid.uuid4().hex[:8],
+        current_stage=stage,
+        status=status,
     )
-    session.commit()
-    return merchant_id
-
-
-def _cleanup(session, merchant_id: str) -> None:
-    session.execute(text("DELETE FROM merchant_task_progress WHERE merchantId = :m"), {"m": merchant_id})
-    session.execute(text("DELETE FROM merchant_stage_progress WHERE merchant_id = :m"), {"m": merchant_id})
-    session.execute(text("DELETE FROM merchant WHERE merchant_id = :m"), {"m": merchant_id})
-    session.commit()
 
 
 def test_active_merchant_is_allowed(client, session):
@@ -74,7 +71,7 @@ def test_active_merchant_is_allowed(client, session):
             resp = client.request(method, path, headers=_headers(merchant_id), json=payload)
             assert resp.status_code == 200, (method, path, resp.status_code, resp.text)
     finally:
-        _cleanup(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)
 
 
 @pytest.mark.xfail(reason=_XFAIL_REASON, strict=True)
@@ -89,7 +86,7 @@ def test_disabled_merchant_token_is_rejected(client, session):
                 leaked.append((method, path, resp.status_code))
         assert not leaked, f"禁用商家的 token 未被拦截(仍可访问): {leaked}"
     finally:
-        _cleanup(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)
 
 
 @pytest.mark.xfail(reason=_XFAIL_REASON, strict=True)
@@ -100,7 +97,7 @@ def test_exited_merchant_token_is_rejected(client, session):
         resp = client.get("/api/merchant/info", headers=_headers(merchant_id))
         assert resp.status_code == 403, resp.text
     finally:
-        _cleanup(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)
 
 
 @pytest.mark.xfail(reason=_XFAIL_REASON, strict=True)
@@ -120,4 +117,4 @@ def test_disabled_merchant_cannot_write(client, session):
         ).scalar()
         assert written is None, f"禁用商家的写入被落库: {written!r}"
     finally:
-        _cleanup(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)

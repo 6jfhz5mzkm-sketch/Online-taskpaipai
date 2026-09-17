@@ -1,10 +1,13 @@
-"""merchant_id 孤儿巡检纯函数回归(#DB-15)。
+"""商家标识列孤儿巡检纯函数回归(#DB-15;候选表含驼峰列 #T-20-R4)。
 
 被测:api-py/scripts/check_orphan.py 的 aggregate_rows / exemption_of / classify / summarize /
-verdict_of(纯函数,不连库),以及「只读硬约束」的结构性断言(SQL_* 常量必须全部为 SELECT)。
+camel_summary / verdict_of(纯函数,不连库),以及结构性断言:
+- 「只读硬约束」:SQL_* 常量必须全部为 SELECT;
+- 「单一真源」:候选表来自 scripts/merchant_scope.py,脚本内不得再有第二份清单/窄口径 SQL;
+- 「列名参数化」:三条按列过滤的 SQL 模板必须带 {column}(兼容 merchant_id / merchantId)。
 
 覆盖:NULL 不算孤儿 / 策略豁免命中 / 存量登记命中 / 未登记孤儿被识别 / 已登记存量不报 exit 1 /
-跨表汇总与退出码 / 脚本内不存在写语句。
+跨表汇总与退出码 / 驼峰表汇总与纳入判定 / 脚本内不存在写语句。
 """
 
 import importlib.util
@@ -108,3 +111,50 @@ def test_script_contains_only_select_statements():
     assert sql_constants, "未找到 SQL_* 常量"
     for name, sql in sql_constants.items():
         assert sql.strip().upper().startswith("SELECT"), name + " 不是 SELECT: " + sql[:60]
+
+
+# ===== #T-20-R4:camelCase 列(merchant_task_progress.merchantId)纳入候选表 =====
+
+
+def test_sql_templates_are_column_parameterized():
+    """按列过滤的三条 SQL 必须带 {column} —— 否则驼峰表会退回按 merchant_id 过滤(查出 0 行而假绿)。"""
+    for name in ("SQL_TABLE_NULL_MID", "SQL_ORPHAN_GROUPS", "SQL_ORPHAN_SAMPLE_IDS"):
+        sql = getattr(orphan, name)
+        assert "{column}" in sql, name + " 未参数化列名: " + sql[:80]
+
+
+def test_scope_uses_single_source_of_truth():
+    """候选表必须来自 merchant_scope 单一真源;旧的「巡检仅 merchant_id」窄口径 SQL 必须已废止。"""
+    source = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "discover_merchant_scope" in source, "未复用 merchant_scope 的发现实现"
+    assert "COLUMN_NAME = 'merchant_id'" not in source.replace("'merchant_id','merchantId'", ""), \
+        "仍存在巡检专用窄口径 SQL(COLUMN_NAME = 'merchant_id')"
+    assert "discover_orphan_scope_tables" not in source, "仍引用已废止的 discover_orphan_scope_tables"
+    assert not hasattr(orphan, "SQL_ORPHAN_SCOPE_TABLES"), "窄口径 SQL 常量应已删除"
+
+
+def test_camel_summary_counts_camel_tables_and_orphans():
+    """camel_summary 只统计驼峰表(列名 != merchant_id),不影响其它表的汇总。"""
+    results = {
+        "event_log": {"column": "merchant_id", "rows": 5, "registered_rows": 0, "unregistered_rows": 5},
+        "merchant_task_progress": {"column": "merchantId", "rows": 2, "registered_rows": 0,
+                                   "unregistered_rows": 2},
+    }
+    assert orphan.camel_summary(results) == {"camel_tables_scanned": 1, "camel_orphan_rows": 2}
+
+
+def test_camel_orphan_is_included_and_fails_the_gate():
+    """驼峰孤儿必须计入 unregistered_rows 并触发 exit 1 —— 纳入而非旁路(#T-20-R4 的核心)。"""
+    results = {"merchant_task_progress": {"column": "merchantId", "rows": 3, "registered_rows": 0,
+                                          "unregistered_rows": 3}}
+    totals = orphan.summarize(results)
+    assert totals == {"orphan_rows": 3, "registered_rows": 0, "unregistered_rows": 3}
+    assert orphan.verdict_of(totals["unregistered_rows"]) == ("FAIL", 1)
+    assert orphan.camel_summary(results)["camel_orphan_rows"] == 3
+
+
+def test_non_camel_tables_are_not_counted_as_camel():
+    """对照:全部是 merchant_id 表时 camel_tables_scanned / camel_orphan_rows 均为 0。"""
+    results = {"event_log": {"column": "merchant_id", "rows": 7, "registered_rows": 7,
+                             "unregistered_rows": 0}}
+    assert orphan.camel_summary(results) == {"camel_tables_scanned": 0, "camel_orphan_rows": 0}

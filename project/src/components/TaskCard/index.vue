@@ -288,7 +288,7 @@ import CategorySelectDropdown from '@/components/CategorySelectDropdown/index.vu
 import { useDropdownStore } from '@/store'
 import Badge from '@/components/Badge/index.vue'
 import type { TaskInfo } from '@/types/task'
-import { TaskStatus } from '@/constants/task'
+import { TaskStatus, resolveTaskActionType } from '@/constants/task'
 import request from '@/api/request'
 import { trackTaskExpand, trackTaskComplete, trackCategorySelect, trackEvent, EventType } from '@/utils/track'
 
@@ -318,8 +318,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   /** 复选框状态切换时触发 */
   toggle: [taskId: string]
-  /** 操作按钮点击 */
-  action: [taskId: string]
+  /**
+   * 操作按钮点击
+   * @description #FE-28 契约变更：改为抛出**整个 task**（含 actionType / actionParam），
+   *              由宿主按 actionType 分发行为；不再只传 taskId（避免宿主再按 taskId 硬编码）
+   */
+  action: [task: TaskInfo]
 }>()
 
 /** 详情展开状态 */
@@ -733,22 +737,32 @@ onMounted(() => {
 
 /** 处理操作按钮点击 */
 function handleAction() {
+  const actionType = resolveTaskActionType(props.task.actionType);
   // 埋点：记录按钮点击
   trackEvent(EventType.ACTION_CLICK, {
     taskKey: props.task.taskId,
     meta: {
       action_text: props.task.actionText,
+      action_type: actionType,
       action_url: props.task.actionUrl || '',
     },
   });
-  
-  if (props.task.actionUrl && props.task.actionUrl !== '') {
-    // H5 模式下直接打开新窗口
-    window.open(props.task.actionUrl, '_blank')
-  } else {
-    // 无 URL 时触发 action 事件
-    emit('action', props.task.taskId)
+
+  // 总控裁决（2026-09-16）：actionType 优先于 actionUrl ——
+  // actionType 是「这个任务需要哪种交互」的协议声明，actionUrl 只是参数/兜底；
+  // 若先看 actionUrl，带外链的 data_* 任务会永远走外链、页内交互到不了。
+  if (actionType !== 'none') {
+    emit('action', props.task)
+    return
   }
+
+  if (props.task.actionUrl) {
+    // actionType=none 时才把 actionUrl 当作「打开外链」兜底
+    window.open(props.task.actionUrl, '_blank')
+    return
+  }
+
+  emit('action', props.task)
 }
 </script>
 

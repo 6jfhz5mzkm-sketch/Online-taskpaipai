@@ -36,6 +36,8 @@ def second_level_dict(t: SecondLevelTask) -> Dict[str, Any]:
         "completionType": t.completionType,
         "actionText": t.actionText,
         "actionUrl": t.actionUrl,
+        "actionType": t.actionType,       # #PB-39:行为语义(10 值枚举;商家端与管理端共用本投影)
+        "actionParam": t.actionParam,     # #PB-39:行为参数(不透明标识;仅 data_form/data_upload 有值)
         "tag": t.tag,
         "defaultCompleted": t.defaultCompleted,
         "status": t.status,

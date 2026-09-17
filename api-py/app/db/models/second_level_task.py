@@ -25,6 +25,11 @@ class SecondLevelTask(Base):
     completionType: Mapped[str] = mapped_column(String(16))
     actionText: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     actionUrl: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    # 行为语义字段(schema v1.11 / #DB-23;投影与校验见 #PB-39;真源 §1.3 / §5.2 API-09):
+    #   actionType  = 按钮点击后的交互类型(10 值枚举,默认 none)
+    #   actionParam = 行为参数(**不透明标识**,仅 data_form/data_upload 使用;其余必须为 NULL)
+    actionType: Mapped[str] = mapped_column(String(32), default="none")
+    actionParam: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     tag: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
     defaultCompleted: Mapped[int] = mapped_column(SmallInteger, default=0)
     status: Mapped[int] = mapped_column(SmallInteger, default=1)

@@ -15,7 +15,7 @@ from app.core.exceptions import ApiException
 from app.services import feishu
 from tests.conftest import cleanup_temp_merchant, make_temp_merchant
 
-OPEN_ID = "ou_test_notify_001"
+OPEN_ID = "<OPEN_ID>_notify_001"
 
 
 class _Sender:

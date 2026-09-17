@@ -272,11 +272,11 @@ interface ApiResponse<T = any> {
 | 5 | 退出后需重新登录才能继续完成任务，确认退出吗？ | 同文件（常量 `LOGOUT_CONFIRM_MESSAGE`；确认弹窗正文） | 打开退出确认弹窗时展示（说明退出后果） | #F-19 任务 1 | **本次新增（#F-19）** |
 | 6 | 取消 | 同文件（常量 `LOGOUT_CONFIRM_CANCEL_TEXT`；确认弹窗次要按钮） | 退出确认弹窗的取消动作（不退出、仅关闭弹窗） | #F-19 任务 1 | **本次新增（#F-19）** |
 | 7 | 确认退出 | 同文件（常量 `LOGOUT_CONFIRM_OK_TEXT`；确认弹窗主按钮） | 确认执行退出：清 `token` / `merchant` 并 `reLaunch` 登录页（无额外 toast） | #F-19 任务 1 | **本次新增（#F-19）** |
-| 8 | 退出登录 | `admin/src/constants/auth.ts`（常量 `LOGOUT_ENTRY_TEXT`；管理后台用户区下拉菜单项，接入于 `admin/src/components/Layout/index.vue`） | 管理后台已登录时用户区菜单显示入口；点击打开二次确认弹窗 | #AF-13（用户 2026-09-14「管理后台也要加退出登录」）；文案风格与商家端 #3 一致 | **本次新增（#AF-13）** |
-| 9 | 退出登录（确认弹窗标题） | 同文件（常量 `LOGOUT_CONFIRM_TITLE`；Element Plus `ElMessageBox` 标题） | 打开退出确认弹窗时展示 | #AF-13 | **本次新增（#AF-13）** |
-| 10 | 退出后需重新登录才能继续管理后台，确认退出吗？ | 同文件（常量 `LOGOUT_CONFIRM_MESSAGE`；确认弹窗正文） | 打开退出确认弹窗时展示（说明退出后果；句式与商家端 #5 一致，仅场景词改为「管理后台」） | #AF-13 | **本次新增（#AF-13）** |
-| 11 | 取消 | 同文件（常量 `LOGOUT_CONFIRM_CANCEL_TEXT`；确认弹窗次要按钮） | 退出确认弹窗的取消动作（不退出、仅关闭弹窗） | #AF-13 | **本次新增（#AF-13）** |
-| 12 | 确认退出 | 同文件（常量 `LOGOUT_CONFIRM_OK_TEXT`；确认弹窗主按钮） | 确认执行退出：清 `admin_token` / `admin_info` 并跳 `/login`（无额外 toast；管理后台 token 与商家端互相独立，只清 admin 自己的） | #AF-13 | **本次新增（#AF-13）** |
+| 8 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 9 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 10 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 11 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 12 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
 | 13 | 选择经营类目 | `project/src/constants/category.ts`（常量 `CATEGORY_PICKER_TITLE`；**弹窗标题与侧栏常驻入口共用同一句**，接入于 `components-local/stage2/CategoryPicker.vue` 与 `components-local/stage2/Stage2Sidebar.vue`） | 阶段二侧栏左下角常驻入口常显（用户区上方）；首次进入阶段二且未保存经营类目时自动弹窗的标题 | #F-20 任务 2.2 / 2.3 | **本次新增（#F-20）** |
 | 14 | 首次进入需要先选择经营类目：最多 3 个，并指定 1 个主类目；保存后可在左侧入口随时修改。 | 同文件（常量 `CATEGORY_DIALOG_INTRO`；弹窗说明） | 打开经营类目弹窗（自动弹或侧栏入口）时展示 | #F-20 任务 2.2 | **本次新增（#F-20）** |
 | 15 | 本次可先跳过；跳过不会保存，下次进入会再次提示。 | 同文件（常量 `CATEGORY_DIALOG_HINT`；弹窗提示） | 打开经营类目弹窗时展示（说明「跳过」语义：仅本次驻留生效、不写库） | #F-20 任务 2.2 / 2.4 | **本次新增（#F-20）** |
@@ -284,19 +284,19 @@ interface ApiResponse<T = any> {
 | 17 | 保存经营类目 | 同文件（常量 `CATEGORY_SAVE_TEXT`；弹窗主按钮） | 点击保存：`POST /api/merchant/category`（API-07，数量 1-3） | #F-20 任务 2.1 | **本次新增（#F-20）** |
 | 18 | 保存中… | 同文件（常量 `CATEGORY_SAVING_TEXT`；弹窗主按钮保存中态） | 保存请求进行中（防重复提交） | #F-20 任务 2.1 | **本次新增（#F-20）** |
 | 19 | 经营类目尚未保存 | 原：阶段一 `pages/index/index.vue` T1.1.2 任务卡 `#right-extra` 插槽 + 常量 `project/src/constants/category.ts` 的 `CATEGORY_UNSAVED_TEXT`（**两者均已删除**） | ~~查询侧返回空数组时在卡片右侧显示~~ | #F-21 任务 2.4 新增 → **#F-22 按用户要求撤回**（用户 2026-09-14 原话：「在一阶段目前展示在右侧角标位置的，"经营类目尚未保存"删除。」） | **已撤回（#F-22）**：代码/常量/样式均已移除，`grep -rn "经营类目尚未保存" project/src` = 0；仅保留本历史行 |
-| 20 | AI 配置 | `admin/src/constants/ai-config.ts`（常量 `AI_CONFIG_MENU_TEXT`；菜单项 + 页面标题，接入于 `admin/src/components/Layout/index.vue` 与 `admin/src/router/index.ts` meta.title） | super_admin 登录后侧栏显示入口；点击进入 AI 分入口配置页 | #AF-14（P7 v1.1 方案 §六；用户 2026-09-14） | **本次新增（#AF-14）** |
-| 21 | AI 配置页顶部说明（密钥留空=不修改、清空=回落 env） | 同文件（常量 `AI_CONFIG_PAGE_INTRO_TEXT`；页面顶部 `el-alert`） | 进入 AI 配置页即展示（说明写入语义，避免误改） | #AF-14（P7 §5.3 写入契约） | **本次新增（#AF-14）** |
-| 22 | 三入口展示名（AI 经营分析 / 主图优化 / 标题优化） | 同文件（常量 `AI_CONFIG_ENTRY_LABELS`；入口卡片标题） | 渲染三入口卡片标题时 | #AF-14（任务单 §3.2） | **本次新增（#AF-14）** |
-| 23 | 字段标签（密钥（api_key）/ 接口地址（base_url）/ 模型（model）/ 超时（ms）/ 最大 tokens / 每日限流 / 启用） | 同文件（常量 `AI_CONFIG_FIELD_LABELS`；表单 `el-form-item` label） | 渲染配置表单字段标签时 | #AF-14（P7 §6.2 字段表） | **本次新增（#AF-14）** |
-| 24 | 保存 / 测试连接 / 清除自定义密钥 | 同文件（常量 `AI_CONFIG_SAVE_TEXT` / `AI_CONFIG_VERIFY_TEXT` / `AI_CONFIG_CLEAR_KEY_TEXT`；各入口卡片操作按钮） | 点击触发对应动作：保存（仅提交 dirty 字段）/ 连通性自检 / 显式清除回落 env | #AF-14（P7 §6.2） | **本次新增（#AF-14）** |
-| 25 | 密钥正常 / 未配置密钥（回落 env）/ 加密密钥不匹配，当前回落 env | 同文件（常量 `AI_CONFIG_KEY_STATUS_OK_TEXT` / `AI_CONFIG_KEY_STATUS_NONE_TEXT` / `AI_CONFIG_KEY_STATUS_DECRYPT_FAILED_TEXT`；入口卡片状态标签） | 按后端 `apiKeyStatus`（ok / none / decrypt_failed）渲染；`decrypt_failed` 用 danger 样式显著告警，不吞成空值 | #AF-14（任务单 §3.3；P7 §5.2 状态枚举） | **本次新增（#AF-14）** |
-| 26 | 已配置：{掩码}（留空表示不修改）/ 未配置（留空表示不修改） | 同文件（常量 `AI_CONFIG_SECRET_PLACEHOLDER_CONFIGURED_PREFIX` / `AI_CONFIG_SECRET_PLACEHOLDER_SUFFIX` / `AI_CONFIG_SECRET_PLACEHOLDER_EMPTY`；密钥输入框 placeholder，**输入框初始为空、绝不预填掩码**） | 渲染密钥输入框占位时展示当前掩码（仅作提示，不进入表单值） | #AF-14（P7 §6.3 三条防线之一） | **本次新增（#AF-14）** |
-| 27 | 指纹：{16hex} / 指纹：— / 最近修改：{人} @ {时间} / 最近修改：— | 同文件（常量 `AI_CONFIG_FINGERPRINT_PREFIX` / `AI_CONFIG_FINGERPRINT_EMPTY_TEXT` / `AI_CONFIG_UPDATED_PREFIX` / `AI_CONFIG_UPDATED_EMPTY_TEXT`；卡片只读元信息） | 渲染指纹与最近修改信息时（指纹用于确认「改的是不是同一把 key」） | #AF-14（P7 §6.2 只读列） | **本次新增（#AF-14）** |
-| 28 | 密钥长度需在 8-256 之间 / 检测到掩码内容，请填写完整密钥 / 接口地址需以 http:// 或 https:// 开头 / 没有需要保存的修改 | 同文件（常量 `AI_CONFIG_API_KEY_LENGTH_TEXT` / `AI_CONFIG_API_KEY_MASK_REJECT_TEXT` / `AI_CONFIG_BASE_URL_FORMAT_TEXT` / `AI_CONFIG_NO_DIRTY_TEXT`；提交前本地校验提示） | 提交前拦截：空串/超长/掩码回写/格式非法/无 dirty 字段（避免发出必然 400 的请求） | #AF-14（P7 §5.3 + §6.3 第 3 条前移） | **本次新增（#AF-14）** |
-| 29 | 已保存，当前进程立即生效；其它 worker 最多 60 秒后生效 | 同文件（常量 `AI_CONFIG_SAVE_OK_TEXT`；保存成功 toast） | PUT 返回 200 后提示（把多 worker 生效边界写在 UI 上） | #AF-14（P7 §6.2 保存提示） | **本次新增（#AF-14）** |
-| 30 | 清除自定义密钥（确认框标题）/ 清除后该入口将回落使用环境变量（env）中的密钥，确认清除吗？/ 确认清除 / 取消 / 已清除自定义密钥，该入口已回落 env | 同文件（常量 `AI_CONFIG_CLEAR_CONFIRM_TITLE` / `AI_CONFIG_CLEAR_CONFIRM_MESSAGE` / `AI_CONFIG_CLEAR_CONFIRM_OK_TEXT` / `AI_CONFIG_CLEAR_CONFIRM_CANCEL_TEXT` / `AI_CONFIG_CLEAR_OK_TEXT`；`ElMessageBox` 二次确认 + 成功提示） | 点击「清除自定义密钥」时二次确认；确认后提交显式 `null`（回落 env） | #AF-14（P7 §5.3「显式 null」；任务单 §3.4） | **本次新增（#AF-14）**；注：`取消` 与 #11 字面量相同，建议后续抽公共按钮文案常量（本轮未改 #AF-13 文件） |
-| 31 | 无权访问该页面（仅超级管理员） | 同文件（常量 `AI_CONFIG_ROLE_DENIED_TEXT`；`admin/src/router/index.ts` 路由守卫） | 非 super_admin 直连 `/ai-config` 时提示并重定向 `/dashboard` | #AF-14（P7 §5.4 三层防线之二） | **本次新增（#AF-14）** |
-| 32 | 暂无 AI 配置 / 关闭后该入口整体回落 env 配置（不清空已存字段） | 同文件（常量 `AI_CONFIG_EMPTY_TEXT` / `AI_CONFIG_ENABLED_HINT_TEXT`；空态与启用开关旁提示） | 列表为空时展示空态；渲染「启用」开关说明时 | #AF-14（任务单 §3.2/§3.8） | **本次新增（#AF-14）** |
+| 20 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 21 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 22 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 23 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 24 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 25 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 26 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 27 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 28 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 29 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 30 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 31 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 32 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
 | 33 | 京麦商家ID | `project/src/constants/merchant.ts`（常量 `JD_MERCHANT_ID_LABEL`；经营类目弹窗顶部输入标签，接入 `components-local/stage2/CategoryPicker.vue`） | 打开经营类目弹窗时展示该字段标签 | #F-25 任务 3.3 | **本次新增（#F-25）** |
 | 34 | 店铺名称 | 同文件（常量 `SHOP_NAME_LABEL`；经营类目弹窗顶部输入标签） | 同上 | #F-25 任务 3.3 | **本次新增（#F-25）** |
 | 35 | 请输入京麦商家ID（仅数字） | 同文件（常量 `JD_MERCHANT_ID_PLACEHOLDER`；输入占位） | 字段为空时的占位提示（说明只允许数字） | #F-25 任务 3.3 | **本次新增（#F-25）** |
@@ -307,10 +307,10 @@ interface ApiResponse<T = any> {
 | 40 | 请选择一级类目 | `project/src/constants/category.ts`（常量 `CATEGORY_TOP_PLACEHOLDER`；一级 dropdown 触发器占位） | 未选择一级类目（parent_id=0）时展示 | #F-25-R1 | **本次新增（#F-25-R1）** |
 | 41 | 请选择二级类目 | 同文件（常量 `CATEGORY_SUB_PLACEHOLDER`；二级 dropdown 触发器占位） | 已选一级类目但未勾选二级类目（parent_id<>0）时展示 | #F-25-R1 | **本次新增（#F-25-R1）** |
 | 42 | 请选择1-3个类目 | 同文件（常量 `CATEGORY_COUNT_ERROR_TEXT`；多选数量越界 toast） | 二级 dropdown 勾第 4 个时前端前置拦截（真源：`project/docs/后端技术方案.md` §5.2 API-07 异常情况行，措辞与后端 400 一致） | #F-25-R1（原为组件内局部常量，本次迁入 constants 统一） | **本次迁移登记（#F-25-R1）** |
-| 43 | 商家登记信息（抽屉信息区标题） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_INFO_TITLE`；`admin/src/pages/merchant-progress/index.vue` 详情抽屉 `el-descriptions` 标题） | 打开商家进度详情抽屉时展示 | #AF-15（用户 2026-09-14「点击商家带出京麦商家ID/店铺名称」） | **本次新增（#AF-15）** |
-| 44 | 京麦商家ID / 店铺名称（管理后台字段标签） | 同文件（常量 `MERCHANT_INFO_JD_ID_LABEL` / `MERCHANT_INFO_SHOP_NAME_LABEL`；抽屉信息区字段标签，**措辞与 #33/#34 商家端一致**） | 渲染详情抽屉两个字段标签时 | #AF-15 | **本次新增（#AF-15）** |
-| 45 | 未登记 | 同文件（常量 `MERCHANT_INFO_UNREGISTERED_TEXT`；字段空态） | `jd_merchant_id` / `shop_name` 为 `null` 或空串时展示（不显示 `null`、不隐藏该行） | #AF-15（任务单 §3.3） | **本次新增（#AF-15）** |
-| 46 | 加载中… / 登记信息获取失败 | 同文件（常量 `MERCHANT_INFO_LOADING_TEXT` / `MERCHANT_INFO_FAILED_TEXT`；信息区加载态与失败态） | 打开抽屉后取回登记信息期间展示加载态；请求失败展示失败态（与「未登记」区分，不静默当空值） | #AF-15（任务单 §3.3/§3.4） | **本次新增（#AF-15）** |
+| 43 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 44 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 45 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 46 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
 | 47 | 共 {总数} 行 / 写入 {写入} 行 / 跳过 {跳过} 行 / 修正 {修正} 行 | `project/src/constants/stage2.ts`（常量 `EXCEL_RESULT_SUMMARY_LABELS` + `EXCEL_RESULT_ROW_UNIT` + `EXCEL_RESULT_SEPARATOR`；接入 `components-local/stage2/ExcelUpload.vue` 导入结果区汇总行） | Excel 上传成功（HTTP 201 有写入 / 200 全坏行）后展示；数值分别取后端 `total_rows / count / skipped / normalized` | #PB-24-3（响应契约 #PB-24-2） | **本次新增（#PB-24-3）** |
 | 48 | 第 {物理行号} 行 · {字段中文名或库列名} · {后端 message} | 同文件（常量 `EXCEL_ISSUE_LINE_TEMPLATE`；字段名经 `SHOP_METRIC_LABELS` 映射，未收录回退库列名；**原因文案原样用后端 `message`**） | 导入结果中逐条渲染后端 `issues[]`（有坏行或被归一的行）时 | #PB-24-3 | **本次新增（#PB-24-3）** |
 | 49 | 仅显示前 200 条问题，完整记录见服务端日志 | 同文件（常量 `EXCEL_ISSUES_TRUNCATED_TEXT`；问题清单尾部提示） | 后端 `issues_truncated == true`（问题数 > 200，上界由后端 `MAX_ISSUES` 固定）时展示 | #PB-24-3（契约 #PB-24-2） | **本次新增（#PB-24-3）** |
@@ -325,21 +325,21 @@ interface ApiResponse<T = any> {
 | 58 | 登录中... | 同文件（常量 `PHONE_LOGIN_LOADING_TEXT`；登录按钮请求中态） | phone-login 请求进行中 | #FE-25 范围A-4 | **本次新增（#FE-25）** |
 | 59 | 安全验证组件加载失败，请刷新重试或稍后再试 | 同文件（常量 `CAPTCHA_UNAVAILABLE_TEXT`；人机校验 fail-closed 兜底 toast） | `getCaptchaParam()` 抛错（SDK 未加载 / appId 未配置 / 初始化失败 / 等待超时）→ **不发 send-code**；不含供应商名与内部码（用户主动取消走 #60） | #FE-25 范围B | **本次新增（#FE-25）** |
 | 60 | 请完成安全验证后再获取验证码 | `project/src/constants/auth.ts`（常量 `CAPTCHA_INCOMPLETE_TEXT`；用户主动取消/未完成安全验证的轻提示） | SDK 已唤起但用户关闭弹层、或 onSuccess 时 `getValidate()` 为空 → **不发 send-code**、按钮立即恢复可点（不启动倒计时） | #FE-25-R1 裁决（与 #59 严格区分：本条不是组件故障） | **本次新增（#FE-25-R1）** |
-| 61 | 商家清单（页面标题 / 侧栏菜单 / 面包屑 / 首页入口） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_LIST_TITLE`；接入 `admin/src/router/index.ts` meta.title、`components/Layout/index.vue` 菜单项、`pages/dashboard/index.vue` 快捷入口） | 渲染侧栏菜单与面包屑时 | #AF-14（商家清单页；用户 2026-09-15） | **本次新增（#AF-14）** |
-| 62 | 商家进度（菜单项改名，原「商家管理」） | 同文件（常量 `MERCHANT_PROGRESS_TITLE`；同一批接入点） | 与新页「商家清单」区分：进度聚合页保留独立入口 | #AF-14（任务单 §2 改名并保持顺序） | **本次新增（#AF-14）** |
-| 63 | 商家ID / 昵称 / 京麦商家ID / 店铺名（关键词占位）；查询；重置；全部 | 同文件（常量 `MERCHANT_LIST_KEYWORD_PLACEHOLDER` / `MERCHANT_LIST_SEARCH_TEXT` / `MERCHANT_LIST_RESET_TEXT` / `MERCHANT_LIST_ALL_OPTION_LABEL`；筛选区输入与按钮、下拉「全部」项） | 关键词输入占位（说明匹配范围）；点击查询/重置；下拉未选择时 | #AF-14（冻结契约：keyword 4 字段匹配） | **本次新增（#AF-14）** |
-| 64 | 表格列标签：商家ID / 昵称 / 京麦商家ID / 店铺名 / 当前阶段 / 状态 / 最近活跃 / 注册时间 | 同文件（常量 `MERCHANT_LIST_COLUMN_LABELS`；`pages/merchant-list/index.vue` 表头） | 渲染商家清单表头时 | #AF-14（任务单 §1 列清单） | **本次新增（#AF-14）** |
-| 65 | 阶段选项与标签：入驻准备（onboarding）/ 开店搭建（shop_setup） | 同文件（常量 `MERCHANT_STAGE_OPTIONS` / `MERCHANT_STAGE_LABELS`；筛选项与列表「当前阶段」列） | 阶段下拉渲染与列表映射（未登记取值回退原值，不隐藏） | #AF-14（冻结契约 stage 枚举） | **本次新增（#AF-14）** |
-| 66 | 状态选项与标签：正常（1）/ 禁用（0）/ 已退出（2） | 同文件（常量 `MERCHANT_STATUS_OPTIONS` / `MERCHANT_STATUS_LABELS`；筛选项与列表「状态」列） | 状态下拉渲染与列表映射（注：当前后端投影未返回 status，列按空值占位展示，#PB-24 落地后自动生效） | #AF-14（冻结契约 status 枚举） | **本次新增（#AF-14）** |
-| 67 | — （列表空值占位）/ 没有符合条件的商家（空态）/ 商家列表加载失败（错误态） | 同文件（常量 `MERCHANT_LIST_VALUE_PLACEHOLDER` / `MERCHANT_LIST_EMPTY_TEXT` / `MERCHANT_LIST_FAILED_TEXT`；列表单元格与页面状态） | 时间列/普通文本列为空、筛选无结果、请求失败时展示（不显示 null、不隐藏该行） | #AF-14（任务单 §1 空值/状态要求） | **本次新增（#AF-14）** |
-| 68 | 查看商家清单 / 查看商家进度（首页快捷入口描述） | 同文件（常量 `MERCHANT_LIST_QUICK_DESC` / `MERCHANT_PROGRESS_QUICK_DESC`；`pages/dashboard/index.vue` 快捷入口） | 首页快捷入口列表渲染时 | #AF-14 | **本次新增（#AF-14）** |
-| 69 | 同店账号（区块标题）/ 绑定账号（按钮）/ 解绑（成员行操作）/ 本账号（自身行标记） | `admin/src/constants/merchant.ts`（常量 `MERCHANT_BINDING_TITLE` / `MERCHANT_BINDING_BIND_TEXT` / `MERCHANT_BINDING_UNBIND_TEXT` / `MERCHANT_BINDING_SELF_TAG_TEXT`；接入 `admin/src/pages/merchant-progress/index.vue` 抽屉「同店账号」区） | 打开商家进度详情抽屉时渲染区块标题与「绑定账号」按钮；成员行 `is_self=true` 显示「本账号」且**不渲染解绑按钮** | 设计单 `dev-docs/任务单/merchant-account-binding-design.md` §6.2；#AF-18（任务单 §1） | **本次新增（#AF-18）** |
-| 70 | 该商家尚未登记京麦商家ID（区内提示）/ 需先在商家端登记京麦商家ID，才能绑定同店账号（按钮 tooltip） | 同文件（常量 `MERCHANT_BINDING_UNREGISTERED_TEXT` / `MERCHANT_BINDING_UNREGISTERED_TOOLTIP_TEXT`） | `merchant.jd_merchant_id` 为空/null 时：`el-alert`(info) 常显 + 「绑定账号」按钮**禁用**（hover 才出 tooltip；禁用态点击不弹窗） | 设计单 §6.2；#AF-18 | **本次新增（#AF-18）** |
-| 71 | 表格列标签：商家ID / 昵称 / 状态 / 绑定时间 / 绑定人 / 操作 | 同文件（常量 `MERCHANT_BINDING_COLUMN_LABELS`；`pages/merchant-progress/index.vue` 成员表表头） | 渲染同店账号成员表表头时 | 设计单 §6.2 列清单；#AF-18 | **本次新增（#AF-18）** |
-| 72 | 暂无同店账号绑定（空态）/ 同店账号信息加载失败（错误态） | 同文件（常量 `MERCHANT_BINDING_EMPTY_TEXT` / `MERCHANT_BINDING_FAILED_TEXT`） | 读取成功但成员为空 / `GET /api/admin/merchant/{merchantId}/bindings` 非 2xx 时（失败态只呈现错误条，**不叠加空表**） | #AF-18 | **本次新增（#AF-18）** |
-| 73 | 绑定账号（弹窗标题）/ 商家ID / 昵称（搜索占位「商家ID / 昵称」）/ 搜索 / 取消 / 候选表列标签（商家ID / 昵称 / 状态）/ 没有匹配的账号 / 请先选择一个账号 | 同文件（常量 `MERCHANT_BINDING_DIALOG_TITLE` / `MERCHANT_BINDING_SEARCH_PLACEHOLDER` / `MERCHANT_BINDING_SEARCH_TEXT` / `MERCHANT_BINDING_CANCEL_TEXT` / `MERCHANT_BINDING_CANDIDATE_COLUMN_LABELS` / `MERCHANT_BINDING_CANDIDATE_EMPTY_TEXT` / `MERCHANT_BINDING_SELECTED_REQUIRED_TEXT`） | 打开绑定弹窗（默认空关键字拉第 1 页候选，**剔除当前商家自身**）；未选行点「绑定账号」给 warning | 设计单 §6.2（候选**只展示 3 列**：商家ID / 昵称 / 状态，**绝不展示手机号**）；#AF-18 | **本次新增（#AF-18）** |
-| 74 | 确认绑定（标题）/ 绑定后两个账号共享阶段/任务进度；账号级标记（新手引导、欢迎消息、数据专区解锁标记）不共享（正文）/ 确认绑定（主按钮）；确认解绑（标题）/ 解绑后该账号不再共享本店进度；已完成的进度记录保持不变（正文）/ 确认解绑（主按钮） | 同文件（常量 `MERCHANT_BINDING_CONFIRM_TITLE` / `MERCHANT_BINDING_CONFIRM_MESSAGE` / `MERCHANT_BINDING_CONFIRM_OK_TEXT` / `MERCHANT_BINDING_UNBIND_CONFIRM_TITLE` / `MERCHANT_BINDING_UNBIND_CONFIRM_MESSAGE` / `MERCHANT_BINDING_UNBIND_CONFIRM_OK_TEXT`；`ElMessageBox.confirm`） | 绑定/解绑二次确认弹窗展示；点「取消」不发送任何写请求 | 设计单 §6.2 **原文照录**（不得改写）；#AF-18 | **本次新增（#AF-18）** |
-| 75 | 绑定/解绑的结果提示（前端无字面量） | `admin/src/pages/merchant-progress/index.vue`（成功：`ElMessage.success(res.message)`；失败：由 `admin/src/api/request.ts` 拦截器按后端 `message` 原样 toast） | 绑定/解绑请求返回后 | 后端文案真源（如「该商家已被登记」「该商家尚未登记京麦商家ID，无法绑定」「该账号已绑定到其它商家」「不能绑定自身」「绑定关系不存在」）；前端**不新造同义句**（§8.1 第 3 条）；#AF-18 | **本次新增（#AF-18）** |
+| 61 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 62 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 63 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 64 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 65 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 66 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 67 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 68 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 69 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 70 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 71 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 72 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 73 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 74 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
+| 75 | **已迁出** → 见《任务管理后台开发标准》§十一（#PL-15） | — | — | — | **已迁出（#PL-15）** |
 | 76 | 该商家已被登记 | **前端无字面量**（不新增常量）：由后端 `PUT /api/merchant/registration` 返回 `{code:400, message:"该商家已被登记"}`，前端经 `api/request.ts` 原样 toast | 阶段二登记时该京麦商家ID **已被别的活跃账号登记**或**已存在活跃绑定组**（HTTP 400，写库不发生） | 设计单 `dev-docs/任务单/merchant-account-binding-design.md` §5.1 判据 / §5.2 文案表；业务真源 = 后端（落点 `services/merchant.py::save_registration` 的唯一性校验，由 #PB 单落地并回写 `后端技术方案` §4.3/API-20） | **本次新增（#FE-17）** |
 
 > **阶段二登记链路（#FE-17）**：#76 是**后端 message 直出型文案**——商家端不新增任何字面量/常量，只经请求层透传（证据：`project/src/api/merchant.ts:21-22` 唯一发送点、`project/src/api/request.ts:80-82` 统一 toast、`project/src/components-local/stage2/CategoryPicker.vue:560-562` 有意不重复提示）。本行登记的目的是**可检索的文案归属与触发条件**，避免后续误判为"前端缺文案"。
@@ -349,6 +349,7 @@ interface ApiResponse<T = any> {
 > 登记说明：#1 / #2 由 #F-17 / #F-15 **先落地在代码**，本节为**事后补登记**（#P-6 只补真源、不改代码）；#3~#7 的措辞由 #F-19 报总控确认后落地在 `project/src/constants/auth.ts`（**唯一真源**，符合 §8.1「未登记不得合入」）。 #8~#12 为管理后台侧同类文案（`admin/src/constants/auth.ts`，**管理后台独立真源文件**，与商家端 `project/src/constants/auth.ts` 各自维护、措辞同风格），落地于 `admin/src/components/Layout/index.vue`（#AF-13）。
 > **已收敛（实测口径）**：阶段一 `pages/index/index.vue` 已接入本表 #3~#7 常量（`import { LOGOUT_* } from '@/constants/auth'`，登出动作从 `@/utils/auth` 导入），两侧措辞一致；`grep -rn "暂不退出" project/src` 仅命中 `pages/index/index.vue:801` 的**代码注释**（非用户可见文案），该注释随 #F-21 清理阶段一旧面板时一并处理。
 > #13~#18 为 #F-20 新增的经营类目弹窗文案（`project/src/constants/category.ts`，弹窗与侧栏入口共用）；**#33~#39 为 #F-25**（商家登记输入区 + 侧栏融合：新增/修改文案，落在 `constants/merchant.ts` 与登记弹窗），**#40~#42 为 #F-25-R1**（二级类目 dropdown 多选：新增占位与迁移数量越界提示，均落 `constants/category.ts`）；**#47~#49 为 #PB-24-3**（Excel 导入结果：汇总行标签、问题条目行模板、截断提示，均落 `constants/stage2.ts`；**问题原因文案不在此登记——单一真源是后端 `ISSUE_MESSAGES`，前端原样展示**）。**#F-26 / #F-26-R1 / #F-26-R2 未新增任何用户可见文案**（#F-26 为图标与触发器视觉、#F-26-R1 为输入框行高修复、#F-26-R2 为登记弹窗删除），故本表仅在 #37/#38 修正引用位置、在 #39 标注移除。**#19 已由 #F-22 撤回**（阶段一 T1.1.2 卡片右侧不再显示任何类目提示；保存/回显全部在阶段二）：按「撤回留痕、不抹历史」处理，行内标注撤回原因与实测口径。后续调整按 §8.1 第 4 条同步本表。
+> **迁出说明（#PL-15，2026-09-16）**：本节（§8.2）面向**商家端**（`project/src`）；历史上混入的**管理后台文案 37 行**已迁入 `project/docs/任务管理后台开发标准.md` **§十一**：**#8~#12**（管理后台退出登录）、**#20~#32**（AI 配置页）、**#43~#46**（商家登记信息抽屉）、**#61~#68**（商家清单 / 商家进度）、**#69~#75**（同店账号）。原文与常量键**逐字未改**，仅换登记位置（取自已发布快照，sha256 与迁移前本节一致）；本表**编号 1~76 不重排**，原位置保留「已迁出 →」占位行以便按号追溯（上方 #1~#76 的既有登记说明与其中引用保留原样）。判据：该行文案服务 `admin/` 页面 / 组件，或原行直接标注 `admin/…` 路径。
 
 ### 8.3 待收敛清单（既有文案：**尚未登记、尚未定稿**）
 

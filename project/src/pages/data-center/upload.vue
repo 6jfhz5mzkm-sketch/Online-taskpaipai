@@ -114,14 +114,15 @@
             <!-- 卡片交互区：常显（内嵌 Excel 上传 / 数据表单）；卡片已无折起，故原 @tap.stop 防误触
                  已无保护对象，一并清理（点击事件不再有上层 tap 处理） -->
             <view class="upload-card__body">
+              <!-- 行为分发（#FE-29）：唯一依据 = 后端 actionType（缺失/未知按 none），actionParam 决定具体表单/上传类型 -->
               <ExcelUpload
-                v-if="getTaskInteraction(task.taskId)?.startsWith('upload:')"
-                :type="getUploadType(getTaskInteraction(task.taskId))"
+                v-if="hasTaskActionType(task, 'data_upload') && resolveDataUploadType(task)"
+                :type="resolveDataUploadType(task)"
                 @complete="store.markTaskCompleted(task.taskId)"
               />
               <DataForm
-                v-else-if="getTaskInteraction(task.taskId)?.startsWith('form:')"
-                :form-key="getTaskInteraction(task.taskId)"
+                v-else-if="hasTaskActionType(task, 'data_form') && resolveDataFormKey(task)"
+                :form-key="resolveDataFormKey(task)"
                 @complete="store.markTaskCompleted(task.taskId)"
               />
             </view>
@@ -148,7 +149,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { trackPageView, trackEvent, EventType } from '@/utils/track';
 import { useStage2Store } from '@/store/modules/stage2';
-import { getTaskInteraction } from '@/utils/stage2';
+import { hasTaskActionType, resolveDataFormKey, resolveDataUploadType } from '@/utils/stage2';
 import { openExternalLink } from '@/utils/link';
 import { getMerchantNickname } from '@/utils/merchant';
 import { fetchTourSeen, markTourSeen, resetTourSeen } from '@/api/tour';
@@ -217,12 +218,13 @@ const shopdataTasks = computed<SecondLevelTask[]>(() =>
   (store.dataCenterStages[0]?.firstLevelTasks || []).flatMap((flt) => flt.secondLevelTasks || []),
 );
 
-/** 按交互类型分行排序：手动输入（form:）组在前、Excel 上传（upload:）组在后，
- *  3 个手动 + 3 个上传 = 每行 3 张共 2 行（3×2 网格），同行类型一致 */
+/** 按行为类型分行排序（#FE-29：按后端 actionType，不再按 taskId 映射）：
+ *  表单录入（data_form）组在前、Excel 上传（data_upload）组在后，
+ *  3 个表单 + 3 个上传 = 每行 3 张共 2 行（3×2 网格），同行类型一致 */
 const sortedShopdataTasks = computed<SecondLevelTask[]>(() => {
   const tasks = shopdataTasks.value;
-  const formTasks = tasks.filter((t) => getTaskInteraction(t.taskId)?.startsWith('form:'));
-  const uploadTasks = tasks.filter((t) => getTaskInteraction(t.taskId)?.startsWith('upload:'));
+  const formTasks = tasks.filter((t) => hasTaskActionType(t, 'data_form'));
+  const uploadTasks = tasks.filter((t) => hasTaskActionType(t, 'data_upload'));
   return [...formTasks, ...uploadTasks];
 });
 
@@ -256,11 +258,9 @@ function handleTaskAction(task: SecondLevelTask): void {
   openExternalLink(task.actionUrl);
 }
 
-/** 解析上传类型（upload:trade -> trade） */
-function getUploadType(interaction: string | undefined): 'trade' | 'traffic' | 'product' {
-  const type = interaction?.replace('upload:', '');
-  return type === 'trade' || type === 'traffic' || type === 'product' ? type : 'trade';
-}
+/* 上传类型/表单 key 的解析已统一到 utils/stage2.ts 的 resolveDataUploadType / resolveDataFormKey
+   （#FE-29：来源由前端 taskId 映射表改为后端 actionType + actionParam）；非法/缺失时返回 undefined，
+   模板 v-if 据此不渲染对应交互区，绝不用默认值兜底到错误的数据表。 */
 
 /** 侧边栏点击分组：回阶段二主页并定位到对应分组 */
 function goGroup(idx: number) {

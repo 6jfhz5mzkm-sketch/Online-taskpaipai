@@ -19,7 +19,7 @@ import pytest
 
 from app.services import feishu as feishu_service
 
-OPEN_ID_PLACEHOLDER = "ou_placeholder_value"
+OPEN_ID_PLACEHOLDER = "<OPEN_ID>_value"
 CARD_TEXT = "卡片正文占位符"
 
 

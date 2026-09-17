@@ -138,7 +138,7 @@ export const fetchShopAnalysis = (timeRange: ShopSummaryTimeRange) => {
   return request.post<ShopAnalysisData>(`/api/shop/analysis?time_range=${timeRange}`);
 };
 
-/** 商家顾问企微二维码地址（预留后端静态接口，参考阶段一 T1.3.7） */
+/** 商家顾问企微二维码地址（预留后端静态接口，参考阶段一 T1.3.8） */
 export const getAdvisorQrCodeUrl = () => `${BASE_URL}/api/static/advisor-qr.jpg`;
 
 /** 清除当前商家全部店铺数据（F2-DC：POST /api/shop/clear-data；清除 shop_* 表 + 重置 T2.5 完成态，保留解锁；待后端就绪联调） */

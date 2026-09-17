@@ -124,7 +124,7 @@ def test_account_crud_and_super_admin_guard(client, session):
 
         created = client.post("/api/admin/account/create", headers=_headers(root_token), json={
             "username": target_username, "password": PASSWORD, "realName": "被创建管理员",
-            "phone": "13800000000", "email": "_test@example.com", "role": "viewer",
+            "phone": "<PHONE>", "email": "_test@example.com", "role": "viewer",
         })
         assert created.status_code == 201, created.text
         body = created.json()["data"]

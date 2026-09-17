@@ -58,20 +58,15 @@ def _login(client, username: str) -> str:
 
 
 def _make_merchant(session, stage: str = "onboarding") -> str:
-    merchant_id = "_test_adminops_" + uuid.uuid4().hex[:8]
-    session.execute(
-        text("INSERT INTO merchant (merchant_id, nickname, current_stage, status) VALUES (:m, '_test 商家', :s, 1)"),
-        {"m": merchant_id, "s": stage},
+    """建临时商家——统一走 conftest 助手(#T-20-R3)。
+
+    本文件此前自写 INSERT + 3 张表的**内联清理清单**,与同文件较新段落(#PB-24 起,已用助手)形成
+    双轨;现统一为助手 —— 清理覆盖范围 = `scripts/merchant_scope.py` 的动态发现(当前库 16 张,
+    含驼峰 `merchant_task_progress.merchantId`),不再自写清单。
+    """
+    return make_temp_merchant(
+        session, merchant_id="_test_adminops_" + uuid.uuid4().hex[:8], current_stage=stage
     )
-    session.commit()
-    return merchant_id
-
-
-def _cleanup_merchant(session, merchant_id: str) -> None:
-    session.execute(text("DELETE FROM merchant_stage_progress WHERE merchant_id = :m"), {"m": merchant_id})
-    session.execute(text("DELETE FROM merchant_task_progress WHERE merchantId = :m"), {"m": merchant_id})
-    session.execute(text("DELETE FROM merchant WHERE merchant_id = :m"), {"m": merchant_id})
-    session.commit()
 
 
 def test_admin_merchant_endpoints_require_admin_token(client):
@@ -132,7 +127,7 @@ def test_unlock_phase1_requires_super_admin_or_admin(client, session):
         assert allowed.status_code == 201, allowed.text
         assert allowed.json()["data"] == {"success": True, "stage2_unlocked": True}
     finally:
-        _cleanup_merchant(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)
         _cleanup_admin(session, viewer)
         _cleanup_admin(session, admin)
 
@@ -166,7 +161,7 @@ def test_unlock_phase1_effects_and_idempotency(client, session):
         ).scalar()
         assert count == 2, f"重复解锁产生了重复行: {count}"
     finally:
-        _cleanup_merchant(session, merchant_id)
+        cleanup_temp_merchant(session, merchant_id)
         _cleanup_admin(session, admin)
 
 
@@ -187,7 +182,8 @@ def test_unlock_phase1_unknown_merchant_404(client, session):
 # ===== #PB-24:阶段/状态筛选(管理后台「商家清单」页) =====
 # 口径(真源 §5.2 API-17):stage ∈ {onboarding, shop_setup}、status ∈ {0, 1, 2};未登记 -> 400;
 # 空串/纯空白 = 不筛选;与 keyword/分页 AND 组合;total 为筛选后行数,投影为 9 字段(含 status)。
-# 造数按铁律 5:复用 conftest 助手,先记 id 再删(cleanup_temp_merchant 覆盖 6 张 shop_* + 2 张进度表)。
+# 造数按铁律 5:复用 conftest 助手,先记 id 再删(cleanup_temp_merchant 的覆盖范围 = 
+# scripts/merchant_scope.py 的动态发现,不写死表数;含驼峰 merchant_task_progress.merchantId)。
 
 # 管理端商家列表投影的**完整键集**(9 键;含 status = #PB-25 补齐前端「状态」列):
 # 断言用「恰好等于」而非「包含」,任何字段增减都必须同步真源 §5.2 API-17 并更新此处。

@@ -66,16 +66,18 @@ const submitting = ref(false);
 const statusText = ref('');
 const success = ref(false);
 
+/* 分发键 = 后端 actionType/actionParam 原值（#FE-29：由 data_form + actionParam 下发，
+   对应 constants/stage2.ts 的 STAGE2_FORM_SCHEMAS 键，不再使用历史 'form:xxx' 拼接串） */
 const VALIDATORS: Record<string, (v: Record<string, unknown>) => Record<string, string>> = {
-  'form:star': validateShopStar,
-  'form:product-count': validateProductCount,
-  'form:health-score': validateHealthScore,
+  star: validateShopStar,
+  'product-count': validateProductCount,
+  'health-score': validateHealthScore,
 };
 
 const SUBMITTERS: Record<string, (v: Record<string, unknown>) => Promise<unknown>> = {
-  'form:star': saveShopStarData as (v: Record<string, unknown>) => Promise<unknown>,
-  'form:product-count': saveProductCountData as (v: Record<string, unknown>) => Promise<unknown>,
-  'form:health-score': saveHealthScoreData as (v: Record<string, unknown>) => Promise<unknown>,
+  star: saveShopStarData as (v: Record<string, unknown>) => Promise<unknown>,
+  'product-count': saveProductCountData as (v: Record<string, unknown>) => Promise<unknown>,
+  'health-score': saveHealthScoreData as (v: Record<string, unknown>) => Promise<unknown>,
 };
 
 async function submit() {

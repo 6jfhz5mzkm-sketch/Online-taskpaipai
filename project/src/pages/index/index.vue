@@ -120,10 +120,10 @@
           <TaskCard
             :ref="(el) => collectTaskCardEl(el, task.taskId)"
             :task="task"
-            :show-category-selector="task.taskId === 'T1.1.2'"
-            :show-fee-selector="task.taskId === 'T1.1.3'"
+            :show-category-selector="hasActionType(task, 'category_picker')"
+            :show-fee-selector="hasActionType(task, 'fee_picker')"
             :tick-delay="tIdx * 40"
-            :anchor="task.taskId === 'T1.1.3' ? 'fee' : ''"
+            :anchor="hasActionType(task, 'fee_picker') ? 'fee' : ''"
             @toggle="taskStore.toggleTask(task.taskId)"
             @action="handleTaskAction"
           />
@@ -391,7 +391,8 @@ import { onPageScroll } from '@dcloudio/uni-app';
 import { getGsap } from '@/utils/gsap';
 const gsap = getGsap();
 import { useTaskStore } from '@/store/modules/task';
-import type { FirstLevelTask } from '@/types/task';
+import type { FirstLevelTask, SecondLevelTask } from '@/types/task';
+import { resolveTaskActionType, type TaskActionType } from '@/constants/task';
 import { isTaskEnabled, isTaskCompleted } from '@/utils/stage2';
 import { getMerchantNickname } from '@/utils/merchant';
 import { logout } from '@/utils/auth';
@@ -761,9 +762,23 @@ function openSupport() {
   uni.showToast({ title: '客服接入中，敬请期待', icon: 'none' });
 }
 
-// 处理任务操作按钮点击
-function handleTaskAction(taskId) {
-  if (taskId === 'T1.3.7') {
+/**
+ * 任务行为判定（模板与脚本共用）
+ * @description 唯一依据 = 后端 `actionType`（投影字段）；缺失/空/未知值一律按 `none`（见 resolveTaskActionType）。
+ *              禁止再按 `taskId` 字面量判断行为（方案：dev-docs/任务单/action-type-design.md）。
+ */
+function hasActionType(task: Pick<SecondLevelTask, 'actionType'> | null | undefined, type: TaskActionType): boolean {
+  return resolveTaskActionType(task?.actionType) === type;
+}
+
+/**
+ * 任务操作按钮行为分发（#FE-28；入参为整个 task，与 TaskCard 新 emit 契约一致）
+ * @description 阶段一涉及：`advisor_qr` → 企微二维码弹窗；
+ *              `category_picker` / `fee_picker` 由模板上的 hasActionType 表达（任务卡内选择器 + 资费锚点）。
+ *              未声明/未知行为不做页内动作（保持原有「无匹配即无操作」语义）。
+ */
+function handleTaskAction(task: SecondLevelTask) {
+  if (hasActionType(task, 'advisor_qr')) {
     showQRModal.value = true
   }
 }

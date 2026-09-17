@@ -19,20 +19,6 @@ export const PHASE2_STAGE_IDS = ['brand', 'listing', 'optimize', 'activity'] as 
 /** 数据分析专区（数据上传/数据看板）stage_id（原阶段二 T2.5 店铺数据上传，独立记录） */
 export const DATA_CENTER_STAGE_ID = 'shopdata';
 
-/**
- * 交互任务映射：taskId -> 交互类型（页面据此渲染对应组件）
- * @description T2.1.2 用于阶段二主页；T2.5.1~T2.5.6 属数据分析专区（数据上传页复用，见 DATA_CENTER_STAGE_ID）。
- */
-export const STAGE2_INTERACTIVE_TASKS: Record<string, string> = {
-  'T2.1.2': 'trademark',
-  'T2.5.1': 'form:star',
-  'T2.5.2': 'upload:trade',
-  'T2.5.3': 'upload:traffic',
-  'T2.5.4': 'upload:product',
-  'T2.5.5': 'form:product-count',
-  'T2.5.6': 'form:health-score',
-};
-
 /** 表单字段配置（T2.5.1 / T2.5.5 / T2.5.6；字段为 UI 展示配置，任务数据仍来自后端） */
 export interface Stage2FormField {
   key: string;
@@ -40,7 +26,7 @@ export interface Stage2FormField {
   required?: boolean;
   /**
    * 留空时是否以 0 提交（#F-29，用户口径「5 个字段全留空视为全是 0」）。
-   * 仅商品信息健康分（form:health-score）启用：空值必须显式发 0（不是 null、不是省略），
+   * 仅商品信息健康分（表单 key = health-score）启用：空值必须显式发 0（不是 null、不是省略），
    * 后端语义「全 0 = 该商家本次无该项数据」；其它表单一律保持「留空即不提交该字段」。
    */
   emptyAsZero?: boolean;
@@ -52,14 +38,14 @@ export interface Stage2FormField {
 
 /** 表单字段 schema（key 与后端 DTO 字段对齐） */
 export const STAGE2_FORM_SCHEMAS: Record<string, Stage2FormField[]> = {
-  'form:star': [
+  star: [
     { key: 'shopStar', label: '店铺星级（1-5）', required: true, min: 1, max: 5, placeholder: '如 4.5' },
     { key: 'serviceScore', label: '客服咨询因子得分（5.5-10）', min: 0, max: 10, placeholder: '如 9.1' },
     { key: 'logisticsScore', label: '物流履约因子得分（5.5-10）', min: 0, max: 10, placeholder: '如 8.8' },
     { key: 'afterSaleScore', label: '售后服务因子得分（5.5-10）', min: 0, max: 10, placeholder: '如 8.6' },
     { key: 'productScore', label: '商品体验因子得分（5.5-10）', min: 0, max: 10, placeholder: '如 9.0' },
   ],
-  'form:product-count': [
+  'product-count': [
     { key: 'totalCount', label: '全部商品数量', required: true, min: 0, integer: true, placeholder: '如 120' },
     { key: 'onSaleCount', label: '售卖中商品数量', min: 0, integer: true, placeholder: '如 80' },
     { key: 'offSaleCount', label: '已下架商品数量', min: 0, integer: true, placeholder: '如 30' },
@@ -67,7 +53,7 @@ export const STAGE2_FORM_SCHEMAS: Record<string, Stage2FormField[]> = {
   ],
   /* 商品信息健康分（T2.5.6）：5 个字段全部非必填（#F-29，用户口径「全留空 = 全 0」）；
      留空值由 emptyAsZero 统一以 0 提交，范围约束（0-100 / 非负整数）保持不变 */
-  'form:health-score': [
+  'health-score': [
     { key: 'avgScore', label: '店铺平均信息分（0-100）', min: 0, max: 100, emptyAsZero: true, placeholder: '如 85' },
     { key: 'scoreGte90Count', label: '信息分≥90 商品数量', min: 0, integer: true, emptyAsZero: true, placeholder: '如 20' },
     { key: 'score78_90Count', label: '信息分 78-90 商品数量', min: 0, integer: true, emptyAsZero: true, placeholder: '如 40' },

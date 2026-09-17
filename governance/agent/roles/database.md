@@ -33,9 +33,9 @@
 - MySQL 8.0（当前本地 MySQL 8.4，库名 `merchant_task`），无高并发需求；Redis 非必须，V1 仅用于类目数据缓存等可选场景
 - 登录方案：飞书授权（不走微信授权）；优惠券不与营销系统对接
 
-### 4.2 表清单（**2026-09-15 总控对齐现库：25 张**）
+### 4.2 表清单（**2026-09-16 现行基线：30 张**；下表**行数为 2026-09-15 开发库实测快照**）
 
-> 事实来源：`project/scripts/schema.sql`（**v1.7**）与实库 `merchant_task` **逐表一致**（`api-py/scripts/check_schema.py` 门禁 PASS：25 张表 / 296 列）；行数为 2026-09-15 开发库实测。
+> 事实来源：`project/scripts/schema.sql`（**v1.11 / 30 张表 / 335 列**，2026-09-16；v1.11 = `#DB-23` 追加 `second_level_task.actionType`/`actionParam`，生产已由 `#OPS-49` / `#DB-23` + `#OPS-50` 对齐）与实库 `merchant_task` **逐表一致**（`api-py/scripts/check_schema.py` 门禁 PASS）；**下表行数为 2026-09-15 开发库实测快照**（按当日的 25 张列示，未随新增表刷新行数）。
 
 | 域 | 表 | 行数 |
 |---|---|---|
@@ -47,6 +47,8 @@
 | 埋点与通知 | `event_log`、`feishu_notification`、`feedback` | 1036 / 6 / 0 |
 | 管理端 | `admin_account`、`ai_entry_config`、`admin_ai_config_audit` | 3 / 0 / 0 |
 | AI 日志 | `ai_analysis_log` | 98 |
+
+> **现行基线新增 5 张表（2026-09-16，未列入上表行数快照）**：`merchant_login_code`、`internal_notify_log`、`captcha_daily_counter`（v1.8 手机号登录）与 `merchant_binding_group`、`merchant_binding_member`（v1.10 账号绑定）⇒ 全库由 25 → **30 张**。
 
 > ⚠️ **`stage` 表已于 2026-09-11 由 `#DB-7` DROP**（四端零引用）。若见到引用 `stage` 的旧脚本/旧迁移（如 `backend/src/migrations/*`），一律属**历史产物，禁止执行**（误跑会重建已删表，`check_schema.py` 会硬失败）。
 > ⚠️ 任务状态有两张**不同**的表：`merchant_task_progress`（**任务级**）与 `merchant_stage_progress`（**阶段级**），不要混用。

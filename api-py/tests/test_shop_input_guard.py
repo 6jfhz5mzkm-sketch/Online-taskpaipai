@@ -9,7 +9,8 @@
 注:Excel 路径 parse_number/_to_num 不校验符号与上界,而目标列是 INT UNSIGNED / DECIMAL 定长。
     本文件把这些口径固化为回归,失败即代表缺口存在。
 
-隔离:临时商家(make_temp_merchant,current_stage=shop_setup)+ finally 清理其 6 张 shop_* 表与派生行。
+隔离:临时商家(make_temp_merchant)+ finally 经 cleanup_temp_merchant 清理(覆盖范围 =
+     scripts/merchant_scope.py 的动态发现,不写死表数)。
 """
 
 import io
@@ -237,16 +238,11 @@ def test_excel_legacy_xls_mime_is_rejected(client, session):
 
 def test_shop_summary_requires_phase2_unlock(client, session):
     """阶段二未解锁的商家读 summary -> 403。"""
-    merchant_id = "_test_locked_" + __import__("uuid").uuid4().hex[:8]
-    session.execute(
-        text("INSERT INTO merchant (merchant_id, nickname, current_stage, status) VALUES (:m, '_test', 'onboarding', 1)"),
-        {"m": merchant_id},
-    )
-    session.commit()
+    # #T-20-R3:统一走 conftest 助手(此前自写 INSERT + 只删 merchant,漏其余作用域表)
+    merchant_id = make_temp_merchant(session, current_stage="onboarding")
     try:
         resp = client.get("/api/shop/summary?time_range=7d", headers=_headers(merchant_id))
         assert resp.status_code == 403, resp.text
         assert resp.json()["code"] == 403
     finally:
-        session.execute(text("DELETE FROM merchant WHERE merchant_id = :m"), {"m": merchant_id})
-        session.commit()
+        cleanup_temp_merchant(session, merchant_id)
